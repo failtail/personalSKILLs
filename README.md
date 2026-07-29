@@ -10,6 +10,7 @@ skills/
   engineering/    # Future implementation and maintenance workflows
   productivity/   # Future personal workflow helpers
   <category>/<skill-name>/
+policies/         # Shared Codex instruction files; not independently invokable Skills
 ```
 
 Each skill directory is self-contained and includes a `SKILL.md`. Supporting references, scripts, and assets belong inside that same skill directory.
@@ -19,6 +20,13 @@ Each skill directory is self-contained and includes a `SKILL.md`. Supporting ref
 | Category | Skill | Purpose |
 | --- | --- | --- |
 | `learning` | [`source-study`](skills/learning/source-study/) | Locate concepts in a local repository, trace the relevant implementation path, and write or deeply explain Chinese learning Markdown. |
+| `engineering` | [`code-annotation-policy`](skills/engineering/code-annotation-policy/) | Apply proportionate comments and implementation documentation according to coding-change scope. |
+
+## Shared Policies
+
+| File | Purpose |
+| --- | --- |
+| [`policies/AGENTS.md`](policies/AGENTS.md) | Require the `code-annotation-policy` workflow for source-code additions, modifications, and refactors. |
 
 ## Adding A Skill
 

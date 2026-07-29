@@ -1,0 +1,4 @@
+interface:
+  display_name: "Code Annotation Policy"
+  short_description: "Apply scaled code comments and module documentation."
+  default_prompt: "Use $code-annotation-policy while implementing this change."
