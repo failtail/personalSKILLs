@@ -33,3 +33,7 @@ Each skill directory is self-contained and includes a `SKILL.md`. Supporting ref
 Copy or link an individual skill directory into the local Codex Skills directory. For example, install `source-study` under the local skills root as `source-study/`; then invoke it with `$source-study`.
 
 This repository is a source collection. It does not include secrets, provider credentials, generated caches, installed dependencies, or machine-specific configuration.
+
+## Maintaining This Collection
+
+Follow [CONTRIBUTING.md](CONTRIBUTING.md) before adding, updating, validating, committing, or pushing a Skill.
