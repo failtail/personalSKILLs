@@ -1,0 +1,4 @@
+interface:
+  display_name: "Source Study"
+  short_description: "Locate source paths and write evidence-grounded learning notes."
+  default_prompt: "Use $source-study to locate a concept in this local repository, write a study note, then deeply explain its execution path."
