@@ -1,4 +1,8 @@
-# Canonical knowledge schema
+# Lightweight ThingJS 2.0 API cache schema
+
+The registry is a selective cache, not a complete mirror of the public API. Add a
+record only when it is used, frequent, high-risk, historically hallucinated,
+conflicting, or already verified and worth preserving for future work.
 
 ## Canonical identity
 
@@ -26,8 +30,12 @@ Store build-time canonical records in JSON so validation is deterministic. Gener
       "owner": "THING.App",
       "name": "load",
       "version_scope": "2.x",
+      "inclusion_reason": ["used", "verified"],
       "evidence_labels": ["official_verified"],
       "usage_state": "allowed",
+      "retrieval_channels": ["official_web"],
+      "project_status": "not_tested",
+      "last_verified": "YYYY-MM-DD",
       "summary": "One-sentence verified purpose.",
       "signatures": [
         {
@@ -40,7 +48,18 @@ Store build-time canonical records in JSON so validation is deterministic. Gener
           "ref": "official-api-page-id",
           "source_id": "S1",
           "source_type": "official_api",
+          "retrieval_channel": "official_web",
           "url": "exact supporting URL",
+          "retrieved_at": "YYYY-MM-DD",
+          "version_evidence": "ThingJS 2.0"
+        },
+        {
+          "ref": "context7-retrieval-id",
+          "source_id": "S4",
+          "source_type": "context7_retrieval",
+          "retrieval_channel": "context7",
+          "url": "https://cdn.uino.cn/thingjs/APIdocs",
+          "original_source_url": "exact official URL returned by Context7",
           "retrieved_at": "YYYY-MM-DD",
           "version_evidence": "ThingJS 2.0"
         }
@@ -70,14 +89,21 @@ The example shows structure, not a verified `App.load` signature. Do not copy pl
 Every API record requires:
 
 - `id`, `kind`, `owner`, `name`, and `version_scope`
+- `inclusion_reason`: one or more of `used`, `frequent`, `high_risk`,
+  `hallucination_history`, `conflict`, or `verified`
 - at least one evidence label
 - `usage_state`: `allowed`, `conditional`, or `blocked`
+- `retrieval_channels`, `project_status`, and `last_verified`
 - a concise summary
 - exact source records
 - at least one verified signature before `usage_state` becomes `allowed`
 - lifecycle or constraint records when they affect safe implementation
 
 An `allowed` record must contain an official API or official documentation source and must not contain `runtime_conflict`.
+
+Context7 is recorded as a retrieval channel. A Context7 source must retain the
+underlying `original_source_url`; its presence alone cannot satisfy
+`official_verified`.
 
 ## Runtime verification states
 
@@ -102,6 +128,7 @@ Group API records by stable class or domain. For each member include:
 - runtime compatibility notes
 
 Do not create one tiny file per API and do not build a single all-API Markdown file.
+Do not use cache size or coverage as a completion criterion.
 
 ## Deduplication
 

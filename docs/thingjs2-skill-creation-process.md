@@ -54,6 +54,11 @@ Benchmark。保留 canonical identity、去重、来源追踪和 runtime conflic
 但把注册表收敛为小型 API Cache；Smoke Test 收敛为 API Retrieval、Official
 Example、Simple Business、Hallucination Trap、Local Knowledge 五题。
 
+第三阶段已将 API 注册表 Schema 和校验器调整为 Cache contract：每条记录必须说明
+`inclusion_reason`、`retrieval_channels`、`project_status` 和 `last_verified`；
+Context7 来源必须保留 `original_source_url`，不能单独获得 `official_verified`。
+唯一键、overload、来源追踪和 runtime conflict 阻断仍然保留。
+
 Context7 在没有真实可调用工具和查询结果时只能标记为未验证/不可用，不能宣称
 已使用；官方网页和本地知识是 fallback。真实 Context7 状态、用户级 Local KB、
 工程师 ZIP 原文、项目 Overlay、运行结果和 V1 原文归档均保留在用户级工作区，

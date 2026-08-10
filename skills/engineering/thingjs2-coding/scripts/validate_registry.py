@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""校验 ThingJS 2.0 Canonical API Registry 的可用性边界。"""
+"""校验 ThingJS 2.0 Lightweight API Cache 的安全边界。"""
 
 from __future__ import annotations
 
@@ -24,17 +24,36 @@ ALLOWED_EVIDENCE_LABELS = {
 }
 ALLOWED_USAGE_STATES = {"allowed", "blocked", "conditional"}
 ALLOWED_RUNTIME_STATES = {"conflict", "inconclusive", "not_tested", "supported"}
+ALLOWED_INCLUSION_REASONS = {
+    "conflict",
+    "frequent",
+    "hallucination_history",
+    "high_risk",
+    "used",
+    "verified",
+}
+ALLOWED_RETRIEVAL_CHANNELS = {
+    "context7",
+    "official_web",
+    "local_knowledge",
+    "project_runtime",
+    "unit_test",
+}
 OFFICIAL_SOURCE_TYPES = {"official_api", "official_docs"}
 OFFICIAL_HOSTS = {"docs.thingjs.com", "thingjs.org.cn", "www.thingjs.org.cn"}
 REQUIRED_RECORD_FIELDS = {
     "evidence_labels",
     "id",
+    "inclusion_reason",
     "kind",
     "name",
     "owner",
+    "project_status",
+    "retrieval_channels",
     "signatures",
     "sources",
     "summary",
+    "last_verified",
     "usage_state",
     "version_scope",
 }
@@ -77,7 +96,7 @@ def validate_record(
     ids: set[str],
     canonical_keys: set[tuple[str, str, str]],
 ) -> None:
-    """验证单条 API 记录的唯一性、官方证据和项目阻断不变量。"""
+    """验证单条缓存记录的选入理由、来源链和项目阻断不变量。"""
 
     path = f"apis[{index}]"
     if not isinstance(record, dict):
@@ -115,6 +134,36 @@ def validate_record(
     if not is_non_empty_string(version_scope) or not version_scope.startswith("2"):
         add_error(errors, "invalid_version_scope", f"{path}.version_scope", "Only ThingJS 2.x is allowed.")
 
+    inclusion_reason = record.get("inclusion_reason")
+    if not isinstance(inclusion_reason, list) or not inclusion_reason:
+        add_error(errors, "invalid_inclusion_reason", f"{path}.inclusion_reason", "At least one cache inclusion reason is required.")
+    else:
+        unknown_reasons = sorted(set(inclusion_reason) - ALLOWED_INCLUSION_REASONS)
+        if unknown_reasons:
+            add_error(
+                errors,
+                "unknown_inclusion_reason",
+                f"{path}.inclusion_reason",
+                f"Unknown reasons: {', '.join(unknown_reasons)}",
+            )
+
+    retrieval_channels = record.get("retrieval_channels")
+    if not isinstance(retrieval_channels, list) or not retrieval_channels:
+        add_error(errors, "invalid_retrieval_channels", f"{path}.retrieval_channels", "At least one retrieval channel is required.")
+    else:
+        unknown_channels = sorted(set(retrieval_channels) - ALLOWED_RETRIEVAL_CHANNELS)
+        if unknown_channels:
+            add_error(
+                errors,
+                "unknown_retrieval_channel",
+                f"{path}.retrieval_channels",
+                f"Unknown channels: {', '.join(unknown_channels)}",
+            )
+
+    for field in ("project_status", "last_verified"):
+        if not is_non_empty_string(record.get(field)):
+            add_error(errors, "cache_field", f"{path}.{field}", "Cache field must be a non-empty string.")
+
     evidence_labels = record.get("evidence_labels")
     if not isinstance(evidence_labels, list) or not evidence_labels:
         add_error(errors, "invalid_evidence", f"{path}.evidence_labels", "At least one evidence label is required.")
@@ -151,6 +200,22 @@ def validate_record(
             if source["ref"] in source_refs:
                 add_error(errors, "duplicate_source_ref", f"{source_path}.ref", f"Duplicate source ref: {source['ref']}")
             source_refs.add(source["ref"])
+        if source.get("retrieval_channel") == "context7":
+            original_url = source.get("original_source_url")
+            if not is_non_empty_string(original_url):
+                add_error(
+                    errors,
+                    "context7_original_source_missing",
+                    f"{source_path}.original_source_url",
+                    "Context7 retrieval requires the underlying official source URL.",
+                )
+            elif urlparse(original_url).hostname not in OFFICIAL_HOSTS:
+                add_error(
+                    errors,
+                    "context7_original_source_unapproved",
+                    f"{source_path}.original_source_url",
+                    "Context7 original_source_url must use an approved official host.",
+                )
 
     signatures = record.get("signatures")
     if not isinstance(signatures, list):
