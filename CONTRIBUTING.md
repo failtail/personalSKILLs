@@ -83,7 +83,7 @@ Skill 名称规则：
 4. 使用官方校验器验证：
 
    ```powershell
-   python E:\CodexData\skills\.system\skill-creator\scripts\quick_validate.py <skill-directory>
+   python <codex-home>/skills/.system/skill-creator/scripts/quick_validate.py <skill-directory>
    ```
 
 5. 至少用一个真实或接近真实的用户请求检查 Skill 的工作流是否能完成；复杂 Skill 优先做独立的前向测试。
@@ -100,8 +100,8 @@ Skill 名称规则：
 个人 Codex Skills 实际安装目录与本仓库是两个位置：
 
 ```text
-安装目录：E:\CodexData\skills\<skill-name>
-收录目录：E:\CodexData\personalSKILLs\skills\<category>\<skill-name>
+安装目录：<codex-home>/skills/<skill-name>
+收录目录：<repo-root>/skills/<category>/<skill-name>
 ```
 
 上传前确认两份 Skill 内容一致。建议先在安装目录迭代和验证，再将最终版本复制到收录目录；不要把收录目录中的未验证修改直接当作安装版本。

@@ -11,6 +11,7 @@ skills/
   productivity/   # Future personal workflow helpers
   <category>/<skill-name>/
 policies/         # Shared Codex instruction files; not independently invokable Skills
+AGENTS.md         # Repository-level navigation and ThingJS Hybrid boundary
 ```
 
 Each skill directory is self-contained and includes a `SKILL.md`. Supporting references, scripts, and assets belong inside that same skill directory.
@@ -28,12 +29,14 @@ Each skill directory is self-contained and includes a `SKILL.md`. Supporting ref
 | Record | Purpose |
 | --- | --- |
 | [`thingjs2-skill-creation-process`](docs/thingjs2-skill-creation-process.md) | Explain the ThingJS 2.0 Skill design, validation boundary, public/private split, and current result. |
+| [`thingjs2-hybrid-policy`](docs/thingjs2-hybrid-policy.md) | Define the active Context7, official web, engineer-corpus, local-knowledge, and runtime evidence boundary. |
 
 ## Shared Policies
 
 | File | Purpose |
 | --- | --- |
 | [`policies/AGENTS.md`](policies/AGENTS.md) | Require the `code-annotation-policy` workflow for source-code additions, modifications, and refactors. |
+| [`AGENTS.md`](AGENTS.md) | Navigate repository rules and the public/private ThingJS Hybrid boundary. |
 
 ## Adding A Skill
 
