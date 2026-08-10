@@ -1,11 +1,19 @@
 ---
 name: thingjs2-coding
-description: Implement, debug, review, and refactor ThingJS 2.0 code using verified official API evidence, project runtime fingerprints, and project-specific recipes. Use for ThingJS 2.0 scene, object, query, event, camera, animation, loading, rendering, and lifecycle tasks, or whenever a codebase uses the global THING API. Exclude ThingJS 1.x, compatibility or migration APIs, t3d assumptions, and unverified third-party API claims. Do not prescribe Vue or another host-framework architecture.
+description: Implement, debug, review, and refactor ThingJS 2.0 three-dimensional frontend code using verified official API evidence, project runtime fingerprints, and project-specific recipes. Use for ThingJS 2.0 scene, object, query, event, camera, animation, loading, rendering, and lifecycle tasks, or whenever a codebase uses the global THING API. Exclude ThingJS 1.x, compatibility or migration APIs, t3d assumptions, and unverified third-party API claims. Do not prescribe Vue or another host-framework architecture.
 ---
 
 # ThingJS 2.0 Coding
 
 Use official ThingJS 2.0 facts and explicit project evidence instead of model memory. Keep API facts, official examples, project recipes, and failed historical attempts in separate evidence classes.
+
+## Responsibility boundary
+
+Act as a ThingJS 2.0 three-dimensional frontend coding specialist: implement,
+debug, review, and refactor global `THING` API code within verified public
+evidence. This identity describes the responsibility boundary; it does not
+permit guesses, legacy compatibility forms, private members, or host-framework
+architecture prescriptions.
 
 ## Apply the non-negotiable rules
 
@@ -25,7 +33,15 @@ Keep this file as the short execution contract. Load only the direct reference
 needed by the current task:
 
 - API lookup or source trust: [context7-official-sources.md](references/context7-official-sources.md) and [source-policy.md](references/source-policy.md).
+- Retrieval order and stop conditions: [knowledge-retrieval.md](references/knowledge-retrieval.md).
+- Object, event, async, unit, and teardown constraints: [coding-standards.md](references/coding-standards.md).
 - Mapping the supplied engineer corpus into code practice: [practice-workflows.md](references/practice-workflows.md).
+- Domain-to-reference routing: [domain-routing.md](references/domain-routing.md).
+- Known conflicts, wrong owners, private pages, and legacy forms: [gotchas.md](references/gotchas.md).
+- User-level engineer rules, when present: load `<codex-home>/thingjs2-ai/knowledge/rules/knowledge-retrieval.md`,
+  `coding-standards.md`, and `gotchas.md` for the matching task. These files are
+  private routing and practice evidence; never copy them into this public Skill
+  or treat them as official API facts.
 - Project compatibility and local files: [project-overlay.md](references/project-overlay.md).
 - Evidence promotion or conflict classification: [evidence-model.md](references/evidence-model.md) and [knowledge-schema.md](references/knowledge-schema.md).
 - Skill evaluation: [evaluation.md](references/evaluation.md).
@@ -33,7 +49,7 @@ needed by the current task:
 Do not load the entire local engineer corpus or API cache when one workflow or
 API domain is sufficient.
 
-Read the repository root `AGENTS.md` and [hybrid-policy.md](../../../docs/thingjs2-hybrid-policy.md)
+Read the repository root `AGENTS.md` and [hybrid-policy.md](references/hybrid-policy.md)
 when changing this Skill or its public evidence workflow. Keep the engineer-maintained
 corpus and project knowledge in the user's local workspace; use only sanitized rules
 and examples in this public Skill.

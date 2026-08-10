@@ -5,6 +5,8 @@
 | ID | Source | Role | Default treatment |
 | --- | --- | --- | --- |
 | `S1` | `https://thingjs.org.cn/api/thingjs` | Official ThingJS 2.0 API reference | Normative API facts |
+| `S1A` | `https://cdn.uino.cn/thingjs/APIdocs/THING.App.html` | Approved first-party API page for `THING.App` | Normative only after exact-page and 2.0 checks |
+| `S1E` | `https://cdn.uino.cn/thingjs/APIdocs/THING.Entity.html` | Approved first-party API page for `THING.Entity` and inherited lifecycle members | Normative only after exact-page and 2.0 checks |
 | `S2` | `https://thingjs.org.cn/examples/` | Official examples | Composition and ordering evidence |
 | `S3` | `https://docs.thingjs.com/new/documentation/` | Official ThingJS 2.0 documentation | Concepts, constraints, lifecycle, and supporting API facts |
 | `S0` | Project-configured private internal API documentation | Supplementary project evidence; keep private and never commit its URL or content to a public Skill |

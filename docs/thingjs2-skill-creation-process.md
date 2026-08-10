@@ -166,3 +166,27 @@ articles may supply practical heuristics, but they do not override official Skil
 requirements or verify ThingJS APIs. A role statement is treated as a concise
 responsibility boundary, not a substitute for a precise description, evidence
 discipline, progressive disclosure or tests.
+
+## 2026-08-10 remediation checkpoint
+
+The user-level corpus now has a 402/402 file manifest with one primary evidence
+class, explainable secondary classes, risk flags, version clues, and a five-layer
+mapping. Three user-level rule references separate retrieval policy, coding
+standards, and Gotcha/Incident handling; they remain private and are routed only
+when the installed Skill finds the corresponding user workspace.
+
+The public Skill now includes sanitized retrieval, coding-standard, domain-routing,
+Gotcha, and bundled hybrid-policy references. Its installed copy was synchronized
+and hash-checked. A visible-browser smoke against seven public ThingJS examples
+confirmed the embedded engine created `THING.App.current`, scene/camera/canvas
+state, and no browser errors; destroy/create, event on/off, and scene-change
+controls were exercised. This is public-example evidence only: the target project's
+2.0.13 runtime now has a bounded App constructor and object event/destroy subset;
+App.load remains a blocked signature conflict and Entity readiness, scene replacement,
+App teardown, and live Skill activation are still unverified. The private API track
+remains `deferred`.
+
+The independent review of the first A/B checkpoint was intentionally `REJECT` and
+is retained in the user workspace. The next review can pass only after the route,
+semantic mapping, trigger matrix, T1–T5 results, target-project runtime evidence,
+and public/install link checks are all re-run.
