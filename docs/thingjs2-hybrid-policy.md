@@ -105,8 +105,14 @@ knowledge/
 
 The API cache is not a complete encyclopedia. Every cache record should retain
 the reason for inclusion, retrieval channel, original source URL, version scope,
-project status and last verification. Context7 alone cannot earn an
-`official_verified` label.
+project status and last verification. Context7 source identity alone cannot earn
+an `official_verified` label; the individual result must pass the provenance
+gate described above.
+
+Private-source deferral is allowed. If an internal page cannot be read in the
+current session, continue the public-only track with official web evidence and
+mark the private track as `deferred`. Do not infer private behavior, and do not
+make internal extraction a prerequisite for public Skill validation.
 
 ## Evaluation boundary
 

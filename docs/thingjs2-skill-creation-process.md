@@ -83,10 +83,32 @@ Skill 主体只保留执行契约；API 来源信任按需读取
 这使 App/load、Entity readiness、事件 ownership、destroy、camera 和 scene
 replacement 能够复用，而不会把 402 份工程师 Markdown 全部塞入每次上下文。
 
+## Public-only continuation after private-source deferral
+
+The private API page is intentionally not a completion gate for the public
+Skill. When the private browser page is unavailable, the implementation
+continues with the two approved public API/documentation sources and records
+the private track as `deferred`, not as `verified` or `rejected`.
+
+The implementation follows four separate promotion paths:
+
+| Evidence or decision | Destination | Why |
+| --- | --- | --- |
+| Official existence, signature, return value | Local selective API Cache | Stable facts must be source-traceable and machine-validatable |
+| Official ordering or minimal composition | Example reference | Examples explain sequence without redefining signatures |
+| Engineer-repeated composition | Recipe candidate | Practical workflows need ownership, async and cleanup gates |
+| Failed retrieval, ambiguity or runtime mismatch | Incident/conflict record | Failure evidence must not become a recommendation |
+
+The first public vertical slice therefore promotes only direct official-web
+facts for `THING.App`, `THING.Entity`, event ownership and object destruction;
+Context7 remains an on-demand retrieval channel, and its rejected or incomplete
+hits remain incidents. The private API track can be resumed later when the user
+provides page content or a readable browser session.
+
 ## 后续阶段
 
 按 Git 阶段推进：先提交公共 Hybrid policy 与导航，再最小修改 Skill/source policy，
-然后将 Canonical Registry 降级为 API Cache，最后定义五题 Smoke Test。每阶段都要
-检查完整 diff、`git diff --check`、相关验证、聚焦提交和推送状态。只有满足公开来源、
-精确签名、生命周期完整且无目标项目冲突的条目，才写入用户级知识库并作为下一次
-公共 Skill 更新的候选。
+然后将 Canonical Registry 降级为 API Cache，定义五题 Smoke Test，并同步可发现的
+用户级 Skill 安装副本。每阶段都要检查完整 diff、`git diff --check`、相关验证、
+聚焦提交和推送状态。只有满足公开来源、精确签名、生命周期完整且无目标项目冲突的
+条目，才写入用户级知识库并作为下一次公共 Skill 更新的候选。
