@@ -21,6 +21,7 @@ Each skill directory is self-contained and includes a `SKILL.md`. Supporting ref
 | --- | --- | --- |
 | `learning` | [`source-study`](skills/learning/source-study/) | Locate concepts in a local repository, trace the relevant implementation path, and write or deeply explain Chinese learning Markdown. |
 | `engineering` | [`code-annotation-policy`](skills/engineering/code-annotation-policy/) | Apply proportionate comments and implementation documentation according to coding-change scope. |
+| `engineering` | [`thingjs2-coding`](skills/engineering/thingjs2-coding/) | Implement, review, debug, and refactor ThingJS 2.0 code using verified official evidence and project runtime boundaries. |
 
 ## Shared Policies
 
