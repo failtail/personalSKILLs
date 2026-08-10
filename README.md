@@ -23,6 +23,12 @@ Each skill directory is self-contained and includes a `SKILL.md`. Supporting ref
 | `engineering` | [`code-annotation-policy`](skills/engineering/code-annotation-policy/) | Apply proportionate comments and implementation documentation according to coding-change scope. |
 | `engineering` | [`thingjs2-coding`](skills/engineering/thingjs2-coding/) | Implement, review, debug, and refactor ThingJS 2.0 code using verified official evidence and project runtime boundaries. |
 
+## Process records
+
+| Record | Purpose |
+| --- | --- |
+| [`thingjs2-skill-creation-process`](docs/thingjs2-skill-creation-process.md) | Explain the ThingJS 2.0 Skill design, validation boundary, public/private split, and current result. |
+
 ## Shared Policies
 
 | File | Purpose |

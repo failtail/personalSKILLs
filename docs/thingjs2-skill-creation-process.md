@@ -22,6 +22,7 @@
 ## 当前结果
 
 - Skill 已形成可安装目录，包含 `SKILL.md`、`agents/openai.yaml`、按需读取的 `references/` 和可重复运行的 `scripts/`。
+- 公开实现已提交到分支 `codex/add-thingjs2-coding-skill`，首个提交为 `feb37cd`（`feat: add thingjs2-coding skill`）；该分支已推送，尚未自动创建 PR。
 - 用户级预检已识别目标项目的 ThingJS SDK `2.0.13`；正式 API 注册表在没有官方精确证据前保持为空。
 - 官方校验器、预检脚本、注册表校验和项目构建已完成验证；现有项目测试仍有两个与本 Skill 无关的预存失败，未被篡改。
 - 首批 `THING.App`/场景加载、`THING.Entity`/完成回调、事件 `on/off`、对象 `destroy` 的网页取证已委派执行，但 Chrome 浏览器连接不可用，因此这些条目尚未升级为正式 API 事实。
