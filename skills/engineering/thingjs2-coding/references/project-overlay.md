@@ -7,6 +7,14 @@ A Project Overlay records compatibility and verified practice for one repository
 ```text
 <codex-home>/thingjs2-ai/
   project-index.json
+  CURRENT_STATE.md
+  CONTEXT7_SOURCES.md
+  knowledge/
+    verified/
+    api-cache/
+    internal/
+    recipes/
+    troubleshooting/
   project-overlays/
     <project-id>/
       project-profile.json
@@ -16,6 +24,12 @@ A Project Overlay records compatibility and verified practice for one repository
       recipes/
 ```
 
+The local workspace is the active runtime state layer. Keep public source policy
+and workflow rules in this Skill repository; keep Context7 availability, private
+sources, supplied engineer documents, SDK fingerprints, Recipes, Incidents and
+runtime results in the user-level workspace. Do not mirror the complete public API
+or commit the local workspace to a Skill collection.
+
 `project-index.json` maps a normalized target project root to its Overlay ID. Keep all generated Skill and Knowledge artifacts in this user-level workspace; do not add them to the target application repository. Only create files that contain real project evidence, and do not copy the general knowledge base into every Overlay.
 
 ## Precedence
@@ -24,7 +38,8 @@ A Project Overlay records compatibility and verified practice for one repository
 2. A project runtime conflict blocks that API for the project.
 3. A project may add stricter constraints or required wrappers.
 4. A project may not silently change an official signature. Record a conflict instead.
-5. A verified project Recipe may guide composition only when all of its APIs remain eligible.
+5. A verified project Recipe may guide composition only when all of its APIs remain eligible;
+   an engineer document or unverified “verified” claim remains a Recipe candidate.
 6. An Incident warns against a failed approach but does not prove the replacement is official.
 
 ## Project profile

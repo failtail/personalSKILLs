@@ -8,9 +8,23 @@
 | `S2` | `https://thingjs.org.cn/examples/` | Official examples | Composition and ordering evidence |
 | `S3` | `https://docs.thingjs.com/new/documentation/` | Official ThingJS 2.0 documentation | Concepts, constraints, lifecycle, and supporting API facts |
 | `S0` | Project-configured private internal API documentation | Supplementary project evidence; keep private and never commit its URL or content to a public Skill |
-| `S4` | Context7 source `https://cdn.uino.cn/thingjs/APIdocs` | On-demand retrieval adapter | Candidate evidence that must retain its underlying source |
+| `S4` | Context7 source `https://cdn.uino.cn/thingjs/APIdocs` | On-demand retrieval channel | Candidate retrieval that must retain its underlying source |
 
 Explicitly reject `https://docs.thingjs.com/new/documentation/28_compatible/` and any ThingJS 1.x, compatibility, migration, t3d, or unknown-version material from runtime knowledge.
+
+## Context7 runtime states
+
+Record the local runtime state separately from evidence truth:
+
+- `active`: a callable Context7 tool returned a relevant result and an original source can be retained.
+- `partial`: a tool exists but coverage, source mapping, or result completeness is insufficient.
+- `waiting`: a configured source is still being processed and has not passed retrieval checks.
+- `unavailable`: no callable Context7 tool is present for the current session.
+- `rejected`: retrieval is polluted, unsafe, or outside the approved ThingJS 2.0 scope.
+
+A configured Library is not automatically `active`. Never claim a Context7 query
+without a real tool result. Context7 is a retrieval channel, not a normative source
+and cannot by itself earn `official_verified`.
 
 ## Priority rules
 
@@ -21,6 +35,14 @@ Explicitly reject `https://docs.thingjs.com/new/documentation/28_compatible/` an
 5. Use the current SDK fingerprint and real runtime probes to determine whether an official API is usable in a specific project.
 6. If the current runtime conflicts with official documentation, preserve the official fact and mark the project record `runtime_conflict` or `project_unsupported`.
 7. Do not use repository code, tests, or Git history as proof that an API is officially supported.
+
+## Official web fallback
+
+Use the exact approved official API, Documentation, or Examples page when Context7
+is not `active`, returns no result, omits the original URL, truncates an example,
+leaves the version ambiguous, conflicts with local evidence, or lacks enough context
+for safe implementation. If the official page still cannot establish the signature
+or lifecycle boundary, keep the API `unverified` and out of final code.
 
 ## Source acceptance record
 

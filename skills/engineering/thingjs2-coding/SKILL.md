@@ -19,6 +19,11 @@ Use official ThingJS 2.0 facts and explicit project evidence instead of model me
 
 Read [source-policy.md](references/source-policy.md) before accepting a new source or resolving a conflict. Read [evidence-model.md](references/evidence-model.md) before promoting any API, example, recipe, or incident to a stronger evidence state.
 
+Read the repository root `AGENTS.md` and [hybrid-policy.md](../../../docs/thingjs2-hybrid-policy.md)
+when changing this Skill or its public evidence workflow. Keep the engineer-maintained
+corpus and project knowledge in the user's local workspace; use only sanitized rules
+and examples in this public Skill.
+
 ## Follow the coding workflow
 
 ### 1. Establish the project boundary
@@ -40,12 +45,18 @@ List the required domains before selecting APIs, such as App initialization, loa
 
 ### 3. Retrieve the smallest sufficient evidence set
 
-1. Search the project's approved API registry and relevant project recipes.
-2. Load only the matching API domain or class records.
-3. If facts are missing, query approved official sources for the exact capability.
+1. Load the project profile/Overlay and the smallest matching local Verified Recipe. A
+   Recipe is a candidate composition, never an API definition.
+2. Inspect the local Context7 runtime state. Query Context7 only when it is explicitly
+   `active`; retain its retrieval channel and original official source URL.
+3. If Context7 is `partial`, `waiting`, `unavailable`, or `rejected`, or if its result
+   is missing, truncated, ambiguous, conflicting, or source-less, use the approved
+   official web sources directly. Do not claim a Context7 query that did not run.
 4. Use official examples to learn composition and ordering, not to redefine an API signature.
-5. Use Context7 only as a retrieval aid. Confirm its underlying source before accepting any result.
-6. Treat repository code as a recipe candidate or incident candidate until its API calls and real runtime behavior are verified.
+5. Load internal/project knowledge only for private constraints, conflicts, Recipes and
+   Incidents. It may block a project API but cannot rewrite general official truth.
+6. Treat repository code and supplied engineer documents as Recipe/Incident candidates
+   until their API calls and real runtime behavior are verified.
 
 Use [knowledge-schema.md](references/knowledge-schema.md) when adding or updating canonical API records.
 
@@ -74,12 +85,15 @@ When any condition fails, keep the API out of final code. Report the missing off
 Before handing off code:
 
 1. Inventory every ThingJS constructor, method, property, enum, and event used by the final diff.
-2. Resolve each item to a canonical API record or an approved official source.
-3. Verify that no blocked or unknown API remains.
-4. Check creation, async completion, event unbinding, animation stop, object destruction, scene change, and component or application teardown.
-5. Run repository tests and the smallest real browser smoke test capable of proving ThingJS behavior.
-6. Distinguish unit-test evidence from actual engine-runtime evidence.
-7. Record reusable success as a project Recipe and failures or reversions as Incidents.
+2. For each item, report the evidence label, retrieval channel, original source URL,
+   version scope, project status and last verification. Context7 is a channel, not an
+   `official_verified` label by itself.
+3. Resolve each item to the lightweight API cache or an approved official source.
+4. Verify that no blocked or unknown API remains. Any `unverified` API must be resolved or removed.
+5. Check creation, async completion, event unbinding, animation stop, object destruction, scene change, and component or application teardown.
+6. Run repository tests and the smallest real browser smoke test capable of proving ThingJS behavior.
+7. Distinguish unit-test evidence from actual engine-runtime evidence.
+8. Record reusable success as a project Recipe and failures or reversions as Incidents.
 
 Read [evaluation.md](references/evaluation.md) when measuring whether this skill improves task completion rather than merely increasing documentation coverage.
 
