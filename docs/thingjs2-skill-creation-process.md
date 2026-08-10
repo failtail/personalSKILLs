@@ -112,3 +112,57 @@ provides page content or a readable browser session.
 用户级 Skill 安装副本。每阶段都要检查完整 diff、`git diff --check`、相关验证、
 聚焦提交和推送状态。只有满足公开来源、精确签名、生命周期完整且无目标项目冲突的
 条目，才写入用户级知识库并作为下一次公共 Skill 更新的候选。
+
+## Engineer-corpus conversion audit and execution plan
+
+The supplied 402-document engineer corpus is currently **indexed and partially
+converted**, not fully promoted. The public Skill can already route core App,
+Entity, event, destruction, camera, and scene-replacement workflows through
+`practice-workflows.md`. The remaining corpus still needs per-file provenance,
+domain routing, conflict classification, and runtime promotion gates.
+
+The next implementation separates the mixed corpus into five callable layers:
+
+| Layer | Purpose | Promotion boundary |
+| --- | --- | --- |
+| Knowledge retrieval | Source order, exact owner/signature checks, stop conditions | May guide retrieval; may not assert an API fact |
+| Coding standards | Ownership, async completion, unbinding, destruction, units, teardown | Must be consistent with verified 2.0 behavior |
+| API facts | Existence, owner, signature, parameters and returns | Requires exact official ThingJS 2.0 evidence |
+| Example/Recipe | Ordering and reusable multi-API composition | Requires explicit preconditions; runtime verification for project recipes |
+| Incident/Gotcha | Wrong owners, compatibility forms, private fields, failed attempts | Remains excluded from generated code |
+
+The Skill design audit found:
+
+- the current description already covers ThingJS domains and excludes 1.x,
+  migration, t3d assumptions and host-framework architecture;
+- frontmatter and `agents/openai.yaml` metadata exist;
+- progressive disclosure exists through a short `SKILL.md`, references and
+  deterministic scripts;
+- source governance and five hybrid smoke-test definitions exist;
+- an explicit engineering responsibility statement, trigger-precision tests,
+  full corpus domain routing and recorded runtime results are still pending.
+
+The implementation order is:
+
+1. Generate a 402/402 manifest with path, hash, domain, evidence class, version
+   clues, owner tokens, risk flags and promotion state.
+2. Split the root governance documents into accepted retrieval rules, rewritten
+   coding standards, incidents and rejected claims. Conflicting forms such as
+   `app.destroy()`, `complete`, `time`, compatibility `app.create`, private fields
+   and API-name analogies must never enter the generation path without evidence.
+3. Add progressive references for knowledge retrieval, coding standards, domain
+   routing and known gotchas; keep the main `SKILL.md` short.
+4. Convert examples, campus APIs, Earth APIs, FAQs and recipes by domain. Do not
+   copy whole source documents into the public Skill.
+5. Test direct, indirect, incomplete, negative and hallucination-trap triggers,
+   then execute the existing T1–T5 smoke tests and a minimal real-engine lifecycle
+   test.
+6. Promote only records that pass source, owner, signature, 2.0 scope, lifecycle
+   and runtime gates. Commit only sanitized public workflow changes; keep source
+   documents, private evidence, overlays and runtime logs in the user workspace.
+
+Official Skill guidance is normative for structure and triggering. Community
+articles may supply practical heuristics, but they do not override official Skill
+requirements or verify ThingJS APIs. A role statement is treated as a concise
+responsibility boundary, not a substitute for a precise description, evidence
+discipline, progressive disclosure or tests.
