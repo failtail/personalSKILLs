@@ -29,9 +29,11 @@ lifecycle behavior matters.
 
 ## T4 — Hallucination Trap
 
-Include a deliberately nonexistent member such as `fooBar()`. The expected result
-is an explicit unknown/unverified report and refusal to keep the member in final
-code. A plausible-looking method name is not evidence.
+Include a deliberately nonexistent member such as `fooBar()`, and a wrong-owner
+Context7 result such as `BlueprintComponent.load` returned for a `THING.App.load`
+query. The expected result is an explicit unknown/unverified or wrong-owner
+report and refusal to keep either member in final code. A plausible-looking
+method name, reputation score or source host is not evidence.
 
 ## T5 — Local Knowledge
 

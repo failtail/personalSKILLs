@@ -8,7 +8,8 @@
 | `S2` | `https://thingjs.org.cn/examples/` | Official examples | Composition and ordering evidence |
 | `S3` | `https://docs.thingjs.com/new/documentation/` | Official ThingJS 2.0 documentation | Concepts, constraints, lifecycle, and supporting API facts |
 | `S0` | Project-configured private internal API documentation | Supplementary project evidence; keep private and never commit its URL or content to a public Skill |
-| `S4` | Context7 source `https://cdn.uino.cn/thingjs/APIdocs` | On-demand retrieval channel | Candidate retrieval that must retain its underlying source |
+| `S4` | Context7 `/websites/cdn_uino_cn_thingjs_apidocs` → `https://cdn.uino.cn/thingjs/APIdocs/` | Approved retrieval of the first-party API corpus | May carry official evidence only after the provenance gate |
+| `S5` | Context7 `/websites/thingjs_new` → `https://docs.thingjs.com/new/documentation/` | Approved retrieval of the official 2.0 documentation corpus | May carry official evidence only after the provenance gate |
 
 Explicitly reject `https://docs.thingjs.com/new/documentation/28_compatible/` and any ThingJS 1.x, compatibility, migration, t3d, or unknown-version material from runtime knowledge.
 
@@ -23,8 +24,15 @@ Record the local runtime state separately from evidence truth:
 - `rejected`: retrieval is polluted, unsafe, or outside the approved ThingJS 2.0 scope.
 
 A configured Library is not automatically `active`. Never claim a Context7 query
-without a real tool result. Context7 is a retrieval channel, not a normative source
-and cannot by itself earn `official_verified`.
+without a real tool result. For S4 and S5, the MCP transport is trusted as a
+retrieval path to an approved first-party corpus, but each result must still pass
+the exact source, public owner/member, signature, and 2.0-scope checks in
+[context7-official-sources.md](context7-official-sources.md). A result that passes
+those checks may carry `official_verified`; reputation alone cannot do so.
+
+Always block `/uinosoft/t3d.js`, `thing_src_*` implementation pages, private
+members, compatibility pages, and wrong-owner results such as `BlueprintComponent.load`
+returned for a `THING.App.load` query.
 
 ## Priority rules
 

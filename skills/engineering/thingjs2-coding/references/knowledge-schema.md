@@ -58,8 +58,10 @@ Store build-time canonical records in JSON so validation is deterministic. Gener
           "source_id": "S4",
           "source_type": "context7_retrieval",
           "retrieval_channel": "context7",
+          "context7_library_id": "/websites/cdn_uino_cn_thingjs_apidocs",
           "url": "https://cdn.uino.cn/thingjs/APIdocs",
           "original_source_url": "exact official URL returned by Context7",
+          "provenance_checked": true,
           "retrieved_at": "YYYY-MM-DD",
           "version_evidence": "ThingJS 2.0"
         }
@@ -102,8 +104,12 @@ Every API record requires:
 An `allowed` record must contain an official API or official documentation source and must not contain `runtime_conflict`.
 
 Context7 is recorded as a retrieval channel. A Context7 source must retain the
-underlying `original_source_url`; its presence alone cannot satisfy
-`official_verified`.
+underlying `original_source_url` and the allowlisted library ID. For the approved
+ThingJS libraries, a result may satisfy `official_verified` only after the exact
+public owner/member/signature and ThingJS 2.0 scope checks pass. Source identity,
+reputation or a matching host alone cannot satisfy the label.
+Set `provenance_checked: true` only after those checks pass; the validator rejects
+Context7-backed `official_verified` records without it.
 
 ## Runtime verification states
 

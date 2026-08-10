@@ -39,8 +39,12 @@ ALLOWED_RETRIEVAL_CHANNELS = {
     "project_runtime",
     "unit_test",
 }
+ALLOWED_CONTEXT7_LIBRARIES = {
+    "/websites/cdn_uino_cn_thingjs_apidocs",
+    "/websites/thingjs_new",
+}
 OFFICIAL_SOURCE_TYPES = {"official_api", "official_docs"}
-OFFICIAL_HOSTS = {"docs.thingjs.com", "thingjs.org.cn", "www.thingjs.org.cn"}
+OFFICIAL_HOSTS = {"cdn.uino.cn", "docs.thingjs.com", "thingjs.org.cn", "www.thingjs.org.cn"}
 REQUIRED_RECORD_FIELDS = {
     "evidence_labels",
     "id",
@@ -78,13 +82,22 @@ def is_non_empty_string(value: Any) -> bool:
 
 
 def has_official_source(sources: list[Any]) -> bool:
-    """确认来源类型与域名同时属于批准的官方入口。"""
+    """确认来源类型、域名和 Context7 provenance 同时满足官方入口。"""
 
     for source in sources:
-        if not isinstance(source, dict) or source.get("source_type") not in OFFICIAL_SOURCE_TYPES:
+        if not isinstance(source, dict):
             continue
         url = source.get("url")
-        if is_non_empty_string(url) and urlparse(url).hostname in OFFICIAL_HOSTS:
+        if source.get("source_type") in OFFICIAL_SOURCE_TYPES:
+            if is_non_empty_string(url) and urlparse(url).hostname in OFFICIAL_HOSTS:
+                return True
+        if (
+            source.get("retrieval_channel") == "context7"
+            and source.get("context7_library_id") in ALLOWED_CONTEXT7_LIBRARIES
+            and source.get("provenance_checked") is True
+            and is_non_empty_string(source.get("original_source_url"))
+            and urlparse(source["original_source_url"]).hostname in OFFICIAL_HOSTS
+        ):
             return True
     return False
 
@@ -201,6 +214,14 @@ def validate_record(
                 add_error(errors, "duplicate_source_ref", f"{source_path}.ref", f"Duplicate source ref: {source['ref']}")
             source_refs.add(source["ref"])
         if source.get("retrieval_channel") == "context7":
+            library_id = source.get("context7_library_id")
+            if library_id not in ALLOWED_CONTEXT7_LIBRARIES:
+                add_error(
+                    errors,
+                    "context7_library_unapproved",
+                    f"{source_path}.context7_library_id",
+                    "Context7 source must use an approved ThingJS library ID.",
+                )
             original_url = source.get("original_source_url")
             if not is_non_empty_string(original_url):
                 add_error(
@@ -253,6 +274,15 @@ def validate_record(
     official = has_official_source(sources)
     if "official_verified" in evidence_labels and not official:
         add_error(errors, "official_evidence_missing", path, "official_verified requires an approved official source URL.")
+    if "official_verified" in evidence_labels:
+        for source in sources:
+            if source.get("retrieval_channel") == "context7" and source.get("provenance_checked") is not True:
+                add_error(
+                    errors,
+                    "context7_provenance_missing",
+                    path,
+                    "Context7-backed official evidence requires provenance_checked=true.",
+                )
     if usage_state == "allowed":
         if not official:
             add_error(errors, "allowed_without_official", path, "Allowed API requires an approved official source.")

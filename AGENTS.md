@@ -24,8 +24,12 @@ repository unless the user explicitly provides a public-safe excerpt.
 - Generate ThingJS 2.0 only; reject 1.x, compatibility, migration, t3d, and
   guessed APIs.
 - Use a local Verified Recipe only as an implementation candidate.
-- Use Context7 only when the current runtime is explicitly `active` and retain
-  its original official source URL.
+- Use only the allowlisted Context7 ThingJS libraries
+  `/websites/thingjs_new` and `/websites/cdn_uino_cn_thingjs_apidocs`. Their
+  first-party corpus identity is trusted, but each result still needs exact
+  source URL, public owner/member/signature and ThingJS 2.0 provenance checks.
+- Keep the ThingJS Skill progressively disclosed: load source-trust and
+  engineer-practice references only for the matching task domain.
 - If Context7 is unavailable, partial, waiting, rejected, incomplete, or lacks
   a source, use the approved official web sources and local project evidence.
 - Use internal/project evidence for project constraints, compatibility, recipes,

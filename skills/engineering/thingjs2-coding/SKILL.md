@@ -19,6 +19,20 @@ Use official ThingJS 2.0 facts and explicit project evidence instead of model me
 
 Read [source-policy.md](references/source-policy.md) before accepting a new source or resolving a conflict. Read [evidence-model.md](references/evidence-model.md) before promoting any API, example, recipe, or incident to a stronger evidence state.
 
+## Use progressive disclosure
+
+Keep this file as the short execution contract. Load only the direct reference
+needed by the current task:
+
+- API lookup or source trust: [context7-official-sources.md](references/context7-official-sources.md) and [source-policy.md](references/source-policy.md).
+- Mapping the supplied engineer corpus into code practice: [practice-workflows.md](references/practice-workflows.md).
+- Project compatibility and local files: [project-overlay.md](references/project-overlay.md).
+- Evidence promotion or conflict classification: [evidence-model.md](references/evidence-model.md) and [knowledge-schema.md](references/knowledge-schema.md).
+- Skill evaluation: [evaluation.md](references/evaluation.md).
+
+Do not load the entire local engineer corpus or API cache when one workflow or
+API domain is sufficient.
+
 Read the repository root `AGENTS.md` and [hybrid-policy.md](../../../docs/thingjs2-hybrid-policy.md)
 when changing this Skill or its public evidence workflow. Keep the engineer-maintained
 corpus and project knowledge in the user's local workspace; use only sanitized rules
@@ -48,7 +62,9 @@ List the required domains before selecting APIs, such as App initialization, loa
 1. Load the project profile/Overlay and the smallest matching local Verified Recipe. A
    Recipe is a candidate composition, never an API definition.
 2. Inspect the local Context7 runtime state. Query Context7 only when it is explicitly
-   `active`; retain its retrieval channel and original official source URL.
+   `active`; use only the two allowlisted official libraries in
+   [context7-official-sources.md](references/context7-official-sources.md), and retain
+   the retrieval channel and original official source URL.
 3. If Context7 is `partial`, `waiting`, `unavailable`, or `rejected`, or if its result
    is missing, truncated, ambiguous, conflicting, or source-less, use the approved
    official web sources directly. Do not claim a Context7 query that did not run.
@@ -56,7 +72,9 @@ List the required domains before selecting APIs, such as App initialization, loa
 5. Load internal/project knowledge only for private constraints, conflicts, Recipes and
    Incidents. It may block a project API but cannot rewrite general official truth.
 6. Treat repository code and supplied engineer documents as Recipe/Incident candidates
-   until their API calls and real runtime behavior are verified.
+   until their API calls and real runtime behavior are verified. Use
+   [practice-workflows.md](references/practice-workflows.md) to map repeated patterns
+   into reusable ownership and lifecycle workflows.
 
 Use [knowledge-schema.md](references/knowledge-schema.md) when adding or updating canonical API records.
 
@@ -65,6 +83,8 @@ Use [knowledge-schema.md](references/knowledge-schema.md) when adding or updatin
 Allow an API only when all of the following are true:
 
 - an official ThingJS 2.0 source supports its existence and required signature;
+- if the evidence came through Context7, the result passed the approved library,
+  exact-owner, public-page, source-URL and 2.0-scope gates;
 - the record is not marked `runtime_conflict` or `project_unsupported` for the target project;
 - the code uses an exact verified signature rather than trying multiple historical variants;
 - required lifecycle and failure behavior are known well enough to implement safely.
@@ -86,8 +106,9 @@ Before handing off code:
 
 1. Inventory every ThingJS constructor, method, property, enum, and event used by the final diff.
 2. For each item, report the evidence label, retrieval channel, original source URL,
-   version scope, project status and last verification. Context7 is a channel, not an
-   `official_verified` label by itself.
+   version scope, project status and last verification. A Context7 result may carry
+   `official_verified` only after the provenance gate; Context7 reputation or a
+   similar-looking owner is never enough.
 3. Resolve each item to the lightweight API cache or an approved official source.
 4. Verify that no blocked or unknown API remains. Any `unverified` API must be resolved or removed.
 5. Check creation, async completion, event unbinding, animation stop, object destruction, scene change, and component or application teardown.

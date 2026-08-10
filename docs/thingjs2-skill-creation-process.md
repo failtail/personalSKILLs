@@ -56,13 +56,32 @@ Example、Simple Business、Hallucination Trap、Local Knowledge 五题。
 
 第三阶段已将 API 注册表 Schema 和校验器调整为 Cache contract：每条记录必须说明
 `inclusion_reason`、`retrieval_channels`、`project_status` 和 `last_verified`；
-Context7 来源必须保留 `original_source_url`，不能单独获得 `official_verified`。
+Context7 来源必须保留 `original_source_url`，只有通过精确 owner、公开成员、
+签名和 2.0 范围校验后，才可沿用该官方来源的 `official_verified` 标签。
 唯一键、overload、来源追踪和 runtime conflict 阻断仍然保留。
 
-Context7 在没有真实可调用工具和查询结果时只能标记为未验证/不可用，不能宣称
-已使用；官方网页和本地知识是 fallback。真实 Context7 状态、用户级 Local KB、
-工程师 ZIP 原文、项目 Overlay、运行结果和 V1 原文归档均保留在用户级工作区，
-不提交到公共仓库。
+Context7 MCP 已通过本机配置完成只读验证：server `Context7/4.0.0` 提供
+`resolve-library-id` 和 `query-docs`。本次批准的库为
+`/websites/thingjs_new`（官方来源、高声誉但覆盖稀疏）和
+`/websites/cdn_uino_cn_thingjs_apidocs`（官方 CDN 来源但检索质量较低）。
+前者的查询返回 ThingJS 2.0 概述，但没有精确 API 签名；后者曾把
+`THING.App.load` 错配为 `BlueprintComponent.load`，并返回 `thing_src_*`
+内部实现页。因此当前状态是 `partial`，而不是盲目 `active`：Context7 的
+官方来源身份可以信任，但每个命中仍需通过精确 owner、公开成员、原始 URL、
+签名和 2.0 范围校验。用户级知识库记录了完整查询结果和污染案例；官方网页
+是精确签名的 fallback。
+
+真实 Context7 状态、用户级 Local KB、工程师 ZIP 原文、项目 Overlay、运行结果
+和 V1 原文归档均保留在用户级工作区，不提交到公共仓库。
+
+## Progressive Disclosure
+
+Skill 主体只保留执行契约；API 来源信任按需读取
+[`context7-official-sources.md`](../skills/engineering/thingjs2-coding/references/context7-official-sources.md)，
+工程师真实实践映射按需读取
+[`practice-workflows.md`](../skills/engineering/thingjs2-coding/references/practice-workflows.md)。
+这使 App/load、Entity readiness、事件 ownership、destroy、camera 和 scene
+replacement 能够复用，而不会把 402 份工程师 Markdown 全部塞入每次上下文。
 
 ## 后续阶段
 
