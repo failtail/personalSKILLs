@@ -1,50 +1,80 @@
-# Evaluation workflow
+# ThingJS 2.0 Hybrid Smoke Tests
 
-Measure whether the Skill improves real ThingJS 2.0 work, not only whether it produces more documentation.
+Use these five tests to check whether the Skill routes evidence correctly and
+prevents unsafe code. They are active smoke tests, not a complete benchmark
+platform or a measure of public API coverage.
 
-## First-release strategy
+## T1 — API Retrieval
 
-1. Discover the complete approved source inventory.
-2. Select 10–15 real tasks from current project history.
-3. Extract only the API domains required by those tasks.
-4. Build the matching canonical records, Examples, Recipes, and Incidents.
-5. Run the tasks with and without the Skill using equivalent clean contexts.
-6. Expand domain coverage only after the vertical slice improves outcomes.
+Choose a real but not overused ThingJS 2.0 API. Check that the agent reports:
 
-Mark undiscovered pages separately from discovered-but-not-ingested pages. `not_ingested` never means that an API does not exist.
+- whether Context7 was actually callable and used;
+- the official web fallback when Context7 is not `active`;
+- the exact original source URL, signature, version scope and project status;
+- no guessed overload or compatibility fallback.
 
-## Task record
+## T2 — Official Example
 
-Each benchmark should contain:
+Choose one approved official Scene, Object or Event example and ask for a small
+adaptation. Check that the example supplies composition and ordering evidence but
+does not silently define an API signature that the official reference does not
+support.
 
-- stable ID and user-style prompt
-- starting repository commit or fixture
-- required capability domains
-- observable acceptance criteria
-- prohibited shortcuts and compatibility fallbacks
-- test and runtime validation commands
-- expected evidence report, without leaking a preferred implementation
-- final outcome and failure classification
+## T3 — Simple Business Composition
 
-## Metrics
+Use a small real task such as object click → state/style change. Check the
+generated code for verified owners, event tags, async boundaries and cleanup. The
+result must be judged with the target project's actual runtime when visual or
+lifecycle behavior matters.
 
-Track at least:
+## T4 — Hallucination Trap
 
-- task acceptance pass rate
-- unknown or fabricated API count
-- blocked API leakage count
-- exact official-source traceability
-- lifecycle and cleanup defects
-- real runtime pass rate
-- regressions in existing tests
-- time and context cost when practical
+Include a deliberately nonexistent member such as `fooBar()`. The expected result
+is an explicit unknown/unverified report and refusal to keep the member in final
+code. A plausible-looking method name is not evidence.
 
-Do not claim success from coverage, duplicate count, or build success alone.
+## T5 — Local Knowledge
 
-## Validation integrity
+Choose a rule that only the user's local project workspace or supplied engineer
+corpus can provide. Check that the agent loads the smallest relevant local record,
+keeps it separate from official API truth, and applies its preconditions instead of
+generalizing it to every ThingJS project.
 
-- Use fresh agents or clean contexts for comparative runs.
-- Give the task and raw repository state, not the intended answer.
-- Do not expose the known bug, expected diff, or previous diagnosis unless the task itself includes it.
-- Preserve outputs, diffs, logs, screenshots, and API inventories as evaluation artifacts.
-- Separate failures caused by missing knowledge, weak Skill workflow, repository defects, unavailable runtime, and unclear requirements.
+## Result format
+
+Each test is `PASS`, `PARTIAL`, or `FAIL`. Record only sanitized output in a public
+review; keep internal prompts, business code, SDK fingerprints, private URLs,
+runtime logs and real T5 material in the user's local workspace.
+
+```yaml
+test_id: T1
+result: PASS | PARTIAL | FAIL
+context7_used: true | false | unknown
+official_web_used: true | false
+local_kb_used: true | false
+unknown_api: true | false
+version_pollution: true | false
+runtime_result: supported | conflict | not_tested | inconclusive
+notes: "Evidence boundary, failure class, or follow-up."
+```
+
+## Failure classification
+
+Classify a failed test before changing anything:
+
+- `skill_workflow`: the agent skipped the required retrieval or audit step;
+- `missing_public_evidence`: Context7 and official pages lack the needed fact;
+- `missing_local_knowledge`: the private workspace lacks a relevant Recipe or Incident;
+- `project_runtime`: the target SDK or project behavior conflicts with public facts;
+- `repository_defect`: the test fixture, build or existing application is broken;
+- `unclear_requirement`: acceptance criteria are insufficient.
+
+Fix only the layer responsible for the failure. Do not expand the public Skill with
+private data just to make one project test pass.
+
+## Completion boundary
+
+Five tests passing is evidence that the retrieval and safety workflow is usable;
+it is not evidence that all ThingJS APIs, Examples or Documentation pages are
+known. Keep broader historical benchmark plans in the user-level archive rather
+than making them a public completion gate.
