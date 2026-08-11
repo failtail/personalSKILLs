@@ -1,13 +1,17 @@
 # Context7 official ThingJS sources
 
-Use this reference when the task needs Context7 retrieval. Context7 is already
-configured for this workspace, and these two allowlisted libraries are the
-user-approved mirrors of the official ThingJS 2.0 corpus:
+Use this reference only when the task needs Context7 retrieval. Determine the
+current session's callable/runtime state before querying. These two allowlisted
+libraries map to user-approved official ThingJS 2.0 corpora:
 
-| Context7 library ID | Original source | Current retrieval quality | Safe default |
+| Context7 library ID | Original source | Known retrieval risk | Safe default |
 | --- | --- | --- | --- |
-| `/websites/thingjs_new` | `https://docs.thingjs.com/new/documentation/` | High reputation, sparse coverage (8 snippets) | Use for ThingJS 2.0 concepts and page discovery; fall back for exact signatures |
-| `/websites/cdn_uino_cn_thingjs_apidocs` | `https://cdn.uino.cn/thingjs/APIdocs/` | First-party CDN corpus, low retrieval quality (316 snippets) | Use only after owner/member/provenance checks; wrong-owner and private-page hits are known |
+| `/websites/thingjs_new` | `https://docs.thingjs.com/new/documentation/` | Coverage may be sparse for exact member signatures | Use for ThingJS 2.0 concepts and page discovery; fall back for exact signatures |
+| `/websites/cdn_uino_cn_thingjs_apidocs` | `https://cdn.uino.cn/thingjs/APIdocs/` | Owner mismatches and internal-page hits have occurred | Use only after owner/member/provenance checks |
+
+Known risks are portable rejection cases, not claims about the current machine's
+configuration, snippet count, or retrieval state. Keep live Context7 capability and
+quality observations in the user-level runtime record.
 
 ## Trust model
 

@@ -1,18 +1,59 @@
-# ThingJS 2.0 domain routing
+# ThingJS 2.0 task and domain router
 
-Load only the smallest reference set that matches the request.
+Read this file immediately after the Skill activates. Select one task-mode row and,
+when a concrete ThingJS capability is involved, one domain row. Maintenance and
+evidence-promotion work may set `domain: null`; do not invent a runtime domain just
+to satisfy the trace schema. Deduplicate required references and load nothing else
+until a conditional gate is met.
 
-| User task | First references | Local evidence to consider |
+## Loading rules
+
+- `Required` means read before acting on that mode or domain.
+- `Conditional` means read only when the condition after the arrow is true.
+- Start with one mode. Add one domain only when the request has a concrete ThingJS
+  capability; add another domain only when a separate capability cannot be decided
+  from the first bundle.
+- Record `mode`, `domain`, `references_loaded`, and a one-line reason for each
+  conditional load in the local evaluation trace.
+- Stop when the smallest sufficient evidence set is reached. Unknown existence,
+  owner, signature, version, lifecycle, or runtime compatibility blocks the call;
+  it does not justify bulk-loading every reference or the engineer corpus.
+
+## Select one task mode
+
+| Task mode | Required | Conditional |
 | --- | --- | --- |
-| App/scene loading | `context7-official-sources.md`, `knowledge-retrieval.md`, `practice-workflows.md` | Scene-load Example and lifecycle Recipe candidate |
-| Entity/object creation or destruction | `knowledge-retrieval.md`, `coding-standards.md`, `practice-workflows.md` | Entity creation/completion and destroy examples |
-| Event binding/unbinding | `coding-standards.md`, `practice-workflows.md` | Tagged handler ownership and repeated-listener Incident |
-| Camera/animation | `knowledge-retrieval.md`, `coding-standards.md` | Camera ordering and timing conflict records |
-| Scene replacement/loading cancellation | `coding-standards.md`, `evidence-model.md`, `practice-workflows.md` | Late-async and cleanup Incident |
-| Query, campus, Earth, style, or rendering | `knowledge-retrieval.md`, `source-policy.md` | Domain candidate only after owner/signature/version verification |
-| Review or hallucination trap | `gotchas.md`, `evidence-model.md`, `evaluation.md` | Wrong-owner, private-page, compatibility, and legacy records |
+| Implement or refactor ThingJS code | `coding-standards.md` | `project-overlay.md` -> target-SDK support or a real project is under discussion; `knowledge-retrieval.md` -> any member is missing or unverified; `source-policy.md` -> a new official fact, source conflict, or provenance decision is needed; `context7-official-sources.md` -> Context7 is callable and provenance must be checked; `gotchas.md` -> a known conflict shape appears |
+| Debug runtime or lifecycle behavior | `coding-standards.md`, `project-overlay.md` | `gotchas.md` -> compatibility, wrong owner, late completion, or teardown is suspected; `knowledge-retrieval.md` -> the expected API behavior is not already verified |
+| Review ThingJS code | `coding-standards.md`, `gotchas.md` | `knowledge-retrieval.md` -> the diff contains an uncached or disputed member; `source-policy.md` -> a new official fact or source conflict is examined; `context7-official-sources.md` -> Context7 is callable and provenance must be checked; `project-overlay.md` -> the review claims target-SDK support |
+| Verify a specific API or example before use | `knowledge-retrieval.md`, `source-policy.md` | `context7-official-sources.md` -> Context7 is callable and its runtime state must be evaluated; `project-overlay.md` -> deciding usability for a target SDK |
+| Convert engineer material into reusable knowledge | `practice-workflows.md`, `evidence-model.md` | `knowledge-schema.md` -> writing a structured record; `source-policy.md` -> promoting an API fact candidate |
+| Promote or change registry evidence | `evidence-model.md`, `knowledge-schema.md`, `source-policy.md` | `project-overlay.md` -> changing project support status |
+| Maintain or evaluate this Skill | `evaluation.md`, `hybrid-policy.md` | `domain: null` by default; other references -> only the changed route or assertion depends on them |
 
-The supplied engineer corpus remains in the user workspace. Public Skill
-references contain sanitized routing rules, not the corpus or private project
-paths.
+## Select the smallest domain bundle
 
+| Domain | Required | Conditional local evidence |
+| --- | --- | --- |
+| App bootstrap or scene loading | `practice-workflows.md` | App/scene Recipe -> implementation or runtime task; loading Incident -> signature, cancellation, or replacement conflict |
+| Entity/object creation, readiness, or destroy | `practice-workflows.md` | Entity Recipe -> readiness or teardown task; destroy Incident -> stale reference or wrong owner |
+| Event binding/unbinding | `practice-workflows.md` | Event Recipe/Incident -> tag, condition, repeated listener, or owner cleanup matters |
+| Camera or animation | `gotchas.md` | Camera Recipe -> target readiness/order matters; timing conflict -> `duration/onComplete` versus `time/complete` appears |
+| Scene replacement or loading cancellation | `practice-workflows.md`, `gotchas.md` | Scene-replacement Recipe/Incident -> generation token, rollback, late result, or cleanup must be implemented |
+| Query, campus, Earth, style, or rendering | `knowledge-retrieval.md` | Matching domain candidate -> only after exact owner, signature, version, and source checks |
+| Hallucination, private member, compatibility, or wrong-owner review | `gotchas.md` | Incident record -> only for the exact matching failure pattern |
+
+## Stop and escalation conditions
+
+Stop reference loading and report the gap when:
+
+- no exact official ThingJS 2.0 owner/signature supports a requested member;
+- the target SDK is unknown or has an unresolved runtime conflict;
+- the required local Recipe or Incident does not exist;
+- a Context7 result lacks an original official URL, exact owner, public member,
+  complete signature, or 2.0 scope;
+- the task has left the ThingJS boundary and only host-framework work remains.
+
+The supplied engineer corpus stays in the user workspace. Use its manifest or domain
+index to locate a small candidate slice; never load all source documents or copy
+private project material into the public Skill.

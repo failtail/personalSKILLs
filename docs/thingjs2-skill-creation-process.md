@@ -190,3 +190,51 @@ The independent review of the first A/B checkpoint was intentionally `REJECT` an
 is retained in the user workspace. The next review can pass only after the route,
 semantic mapping, trigger matrix, T1–T5 results, target-project runtime evidence,
 and public/install link checks are all re-run.
+
+## 2026-08-11 progressive-disclosure optimization
+
+The previous Skill had the correct physical layers—metadata, a short `SKILL.md`,
+public references, deterministic scripts, and private project evidence—but its
+reference list was flat. It did not force an agent to select a primary task mode,
+state why a conditional reference was needed, or stop after reaching sufficient
+evidence. Its five smoke tests also mixed activation, routing, output behavior, and
+runtime into one apparent validation surface.
+
+This phase applies three reusable design lessons:
+
+- Official Skill guidance: keep metadata focused on discovery, keep the execution
+  contract concise, link references directly, avoid duplicate details, and use
+  isolated forward tests.
+- Vue Best Practices structure: distinguish required foundations from optional
+  feature references and bind optional loading to an explicit requirement. No Vue
+  implementation rule is copied into this framework-neutral Skill.
+- Superpowers Skill-writing practice: preserve a pre-change routing baseline, rerun
+  the same prompts after the change, and require fresh evidence before a completion
+  claim. The public Skill does not copy Superpowers' product-specific invocation
+  rules or rhetorical style.
+
+The revised description starts with concrete `Use when` conditions and removes the
+overbroad rule that triggered whenever a repository merely contained global `THING`.
+Generic Vue, JavaScript, or CSS work with no requested `THING` interaction now stays
+outside this Skill, while suspicious executable `THING.*` requests still activate
+the evidence gate. A real Vue + ThingJS lifecycle task may activate both Skills;
+each remains responsible for its own boundary.
+
+After activation, the agent reads `domain-routing.md`, selects one primary task mode
+and, for concrete ThingJS capability work, the smallest domain bundle. Maintenance
+and evidence-promotion tasks may use `domain: null`. It loads required references and
+adds conditional references only with a recorded reason. Unknown owner, signature, version, lifecycle,
+or target runtime support is a stop condition rather than permission to bulk-load the
+engineer corpus or every public reference.
+
+Evaluation is now split into A01–A12 metadata activation cases, R01–R06 routing/load-
+trace cases, T1–T5 output behavior tests, and separate target-engine runtime proof.
+Structural validation, public/private leakage checks, installed-copy hash equality,
+and independent review remain separate release gates.
+
+The user-level evaluation workspace now keeps exact prompt fixtures, sanitized forward
+outputs, a machine-readable result record, and a replay checker. The checker validates
+artifact existence, `NOT_RUN`/artifact consistency, activation counts, and the complete
+coverage gate; it does not pretend to be a model selector or promote partial runtime
+evidence to API truth. Public Skill files contain only this contract and sanitized
+references, never the private fixtures or runtime records.

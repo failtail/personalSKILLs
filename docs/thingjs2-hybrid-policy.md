@@ -116,11 +116,18 @@ make internal extraction a prerequisite for public Skill validation.
 
 ## Evaluation boundary
 
-Use five active smoke tests: API retrieval, official example, a simple business
-composition, a hallucination trap, and local-knowledge retrieval. Record only
-`PASS`, `PARTIAL`, or `FAIL`, plus the retrieval channels, unknown API status,
-version pollution, runtime result and notes. Keep private prompts, project
-runtime output and internal knowledge in the user's local workspace.
+Evaluate four layers independently: metadata activation, progressive reference
+routing, five output-behavior smoke tests, and target-engine runtime. A structural
+validation pass cannot prove activation, a correct activation cannot prove minimal
+reference loading, and a public-example smoke cannot prove target-project runtime.
+Preserve before/after prompt results when changing the description, and require a
+load trace for routing tests. Keep private prompts, project runtime output and
+internal knowledge in the user's local workspace.
+
+The five output tests remain API retrieval, official example, a simple business
+composition, a hallucination trap, and local-knowledge retrieval. Record `PASS`,
+`PARTIAL`, `FAIL`, or `NOT_RUN`, plus the retrieval channels, unknown API status,
+version pollution, runtime result and notes.
 
 The former full-site inventory, complete public API mirror, large benchmark
 matrix and heavy RAG pipeline are historical V1 design ideas. Preserve their

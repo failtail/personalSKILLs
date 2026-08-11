@@ -1,4 +1,4 @@
 interface:
   display_name: "ThingJS 2.0 Coding"
-  short_description: "基于官方证据实现和审查 ThingJS 2.0 代码"
-  default_prompt: "Use $thingjs2-coding as a ThingJS 2.0 three-dimensional frontend coding specialist. Route the task through progressive disclosure, approved Context7 official-source retrieval, official fallback, verified APIs, coding standards, known-gotcha rejection, and project evidence."
+  short_description: "基于官方证据实现与审查 ThingJS 2.0 代码"
+  default_prompt: "Use $thingjs2-coding to verify and implement this ThingJS 2.0 task with the smallest sufficient evidence set."
