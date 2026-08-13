@@ -10,6 +10,13 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from contract_signature_schema import (
+    STRUCTURED_CONTRACT_SCHEMA_VERSION,
+    STRUCTURED_SIGNATURE_SCHEMA_VERSION,
+    has_structured_signature,
+    validate_structured_signature,
+)
+
 
 ALLOWED_CONTRACT_STATES = {
     "documented",
@@ -17,6 +24,7 @@ ALLOWED_CONTRACT_STATES = {
     "behavior_verified",
     "blocked",
 }
+SUPPORTED_CONTRACT_SCHEMA_VERSIONS = {2, STRUCTURED_CONTRACT_SCHEMA_VERSION}
 ALLOWED_RESOLUTION_STATES = {
     "resolved",
     "resolved_inherited",
@@ -281,6 +289,22 @@ def validate_contract_records(
 ) -> dict[tuple[str, str, str], dict[str, Any]]:
     """校验语义证据、存在性和行为分级，并返回 canonical key 索引。"""
 
+    schema_version = contract.get("schema_version")
+    if schema_version not in SUPPORTED_CONTRACT_SCHEMA_VERSIONS:
+        add_issue(
+            errors,
+            "contract_schema_version",
+            "schema_version",
+            f"Unsupported Contract schema version: {schema_version}",
+        )
+    if schema_version == STRUCTURED_CONTRACT_SCHEMA_VERSION and contract.get("signature_schema_version") != STRUCTURED_SIGNATURE_SCHEMA_VERSION:
+        add_issue(
+            errors,
+            "signature_schema_version",
+            "signature_schema_version",
+            "Structured Contract schema requires the supported signature schema version.",
+        )
+
     records = contract.get("apis")
     if not isinstance(records, list):
         add_issue(errors, "contract_apis", "apis", "Contract requires an apis array.")
@@ -393,6 +417,21 @@ def validate_contract_records(
                 f"{record_path}.signatures",
                 "Allowed API requires a non-empty controlled signature and source references.",
             )
+        if isinstance(signatures, list):
+            for signature_index, signature in enumerate(signatures):
+                if has_structured_signature(signature):
+                    structured_errors = validate_structured_signature(
+                        signature,
+                        f"{record_path}.signatures[{signature_index}]",
+                        record.get("kind", ""),
+                    )
+                    for structured_error in structured_errors:
+                        add_issue(
+                            errors,
+                            "structured_signature_invalid",
+                            structured_error["path"],
+                            structured_error["message"],
+                        )
 
         exists_now = key in runtime_keys
         if state in {"existence_verified", "behavior_verified"}:
@@ -642,8 +681,13 @@ def validate_all(
 
     errors: list[dict[str, Any]] = []
     warnings: list[dict[str, Any]] = []
-    if contract.get("schema_version") != 2:
-        add_issue(errors, "contract_schema", "schema_version", "Contract schema_version must equal 2.")
+    if contract.get("schema_version") not in SUPPORTED_CONTRACT_SCHEMA_VERSIONS:
+        add_issue(
+            errors,
+            "contract_schema",
+            "schema_version",
+            f"Contract schema_version must be one of {sorted(SUPPORTED_CONTRACT_SCHEMA_VERSIONS)}.",
+        )
     if surface.get("schema_version") != 1:
         add_issue(errors, "surface_schema", "runtime.schema_version", "Runtime Surface schema_version must equal 1.")
 

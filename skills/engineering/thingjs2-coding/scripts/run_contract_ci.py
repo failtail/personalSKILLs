@@ -21,6 +21,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--parser-root")
     parser.add_argument("--entry", action="append", default=[])
     parser.add_argument("--allowlist")
+    parser.add_argument(
+        "--dts-output",
+        help="Optional generated .d.ts path; when provided, --check detects declaration drift.",
+    )
+    parser.add_argument("--dts-report", help="Optional JSON report path for declaration generation.")
     parser.add_argument("--node", default="node")
     parser.add_argument("--python", default=sys.executable)
     return parser.parse_args()
@@ -105,10 +110,27 @@ def main() -> int:
     validation_summary = {}
     if report.exists():
         validation_summary = json.loads(report.read_text(encoding="utf-8")).get("summary", {})
+    declaration_code = 0
+    declaration_report = None
+    if args.dts_output:
+        declaration_report = output_dir / "declaration-generation.json"
+        declaration_command = [
+            args.python,
+            str(scripts / "generate_contract_dts.py"),
+            "--contract",
+            args.contract,
+            "--output",
+            args.dts_output,
+            "--report",
+            args.dts_report or str(declaration_report),
+            "--check",
+        ]
+        declaration_code = run(declaration_command, output_dir / "declaration.stdout.json")
+        steps.append({"name": "declaration_drift", "exit_code": declaration_code})
     print(
         json.dumps(
             {
-                "valid": validate_code == 0,
+                "valid": validate_code == 0 and declaration_code == 0,
                 "steps": steps,
                 "validation_summary": validation_summary,
                 "artifacts": {
@@ -121,7 +143,7 @@ def main() -> int:
             indent=2,
         )
     )
-    return validate_code
+    return validate_code or declaration_code
 
 
 if __name__ == "__main__":

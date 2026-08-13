@@ -189,11 +189,13 @@ behavior tests remain separate gates.
 
 ## TypeScript declaration boundary
 
-Generate `.d.ts` only from structured, verified Contract signatures. Runtime
-Surface cannot supply parameter or return types. A handwritten declaration cannot
-modify the Contract and must fail a generated-output hash check. Records with only
-text signatures or unresolved types remain omitted until their structured official
-evidence is controlled.
+Generate `.d.ts` with `scripts/generate_contract_dts.py` only from schema-3
+structured, verified Contract signatures. Runtime Surface cannot supply parameter
+or return types. A handwritten declaration cannot modify the Contract and must fail
+the generator's `--check` drift gate. Records with only text signatures, blocked
+states, unsupported kinds, or unresolved types remain omitted until their
+structured official evidence is controlled. Schema 2 remains a readable migration
+input, not a type-generation source.
 
 ## Storage boundary
 

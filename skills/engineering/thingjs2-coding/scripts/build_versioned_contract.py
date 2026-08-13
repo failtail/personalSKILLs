@@ -11,7 +11,8 @@ from pathlib import Path
 from typing import Any
 
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
+SIGNATURE_SCHEMA_VERSION = 1
 
 
 def parse_args() -> argparse.Namespace:
@@ -274,6 +275,7 @@ def build_contract(
     )
     return {
         "schema_version": SCHEMA_VERSION,
+        "signature_schema_version": SIGNATURE_SCHEMA_VERSION,
         "contract_id": f"thingjs-{sdk_version}-{artifact_set_id.split(':', 1)[1][:16]}",
         "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
         "sdk_binding": {

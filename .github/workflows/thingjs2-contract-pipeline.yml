@@ -31,9 +31,12 @@ jobs:
           skills/engineering/thingjs2-coding/scripts/preflight.py
           skills/engineering/thingjs2-coding/scripts/validate_registry.py
           skills/engineering/thingjs2-coding/scripts/build_versioned_contract.py
+          skills/engineering/thingjs2-coding/scripts/contract_signature_schema.py
+          skills/engineering/thingjs2-coding/scripts/generate_contract_dts.py
           skills/engineering/thingjs2-coding/scripts/validate_contract.py
           skills/engineering/thingjs2-coding/scripts/run_contract_ci.py
           skills/engineering/thingjs2-coding/scripts/test_contract_pipeline.py
+          skills/engineering/thingjs2-coding/scripts/test_structured_contract.py
           skills/engineering/thingjs2-coding/scripts/build_usage_promotion_queue.py
           skills/engineering/thingjs2-coding/scripts/test_usage_promotion_queue.py
       - name: Check Node tools
@@ -47,3 +50,5 @@ jobs:
           --node node
       - name: Run synthetic Usage Promotion Queue
         run: python skills/engineering/thingjs2-coding/scripts/test_usage_promotion_queue.py
+      - name: Run structured Contract and declaration test
+        run: python skills/engineering/thingjs2-coding/scripts/test_structured_contract.py

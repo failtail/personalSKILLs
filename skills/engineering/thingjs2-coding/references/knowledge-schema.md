@@ -125,6 +125,27 @@ user/project storage.
 The example shows structure, not a verified `App.load` signature. Never promote
 placeholder fields into executable knowledge.
 
+## Structured signatures
+
+Schema 3 adds root `signature_schema_version: 1`. A structured signature keeps
+the controlled text for human traceability and adds machine fields:
+
+```json
+{
+  "text": "object.destroy() -> Boolean",
+  "parameters": [],
+  "return_type": {"kind": "primitive", "name": "boolean"},
+  "async": false,
+  "lifecycle": ["清理拥有者引用后再销毁"],
+  "source_refs": ["official-entity-api"]
+}
+```
+
+Supported type descriptors are explicit primitive, qualified reference, array,
+promise, union, literal, and inline object forms. `any` and unresolved
+`unknown` types are rejected. Schema 2 remains readable as a legacy text-signature
+Contract; it must be rebuilt from controlled records before `.d.ts` generation.
+
 ## Contract states
 
 | State | Minimum evidence | Allowed claim |
