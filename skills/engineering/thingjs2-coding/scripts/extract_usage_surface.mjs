@@ -42,6 +42,8 @@ function parseArgs(argv) {
     else if (arg === '--output') values.output = argv[++index]
     else if (arg === '--entry') values.entries.push(argv[++index])
     else if (arg === '--parser-root') values.parserRoot = argv[++index]
+    else if (arg === '--contract') values.contract = argv[++index]
+    else if (arg === '--alias-config') values.aliasConfig = argv[++index]
     else if (arg === '--help') values.help = true
     else throw new Error(`Unknown argument: ${arg}`)
   }
@@ -53,6 +55,7 @@ function printHelp() {
     [
       'Usage: node extract_usage_surface.mjs --project-root <path> --output <json>',
       '       [--entry <relative-file>] [--parser-root <node-project>]',
+      '       [--contract <versioned-contract.json>] [--alias-config <tsconfig/vite alias JSON>]',
       '',
       'The parser root must expose @babel/parser and, for .vue files, @vue/compiler-sfc.',
     ].join('\n') + '\n',
@@ -203,6 +206,132 @@ function sameBinding(left, right) {
   return JSON.stringify(left) === JSON.stringify(right)
 }
 
+function resolvedReferenceOwner(typeDescriptor) {
+  if (!typeDescriptor || typeof typeDescriptor !== 'object') return null
+  if (typeDescriptor.kind === 'reference' && typeof typeDescriptor.name === 'string') {
+    return typeDescriptor.name.startsWith('THING.') ? typeDescriptor.name : null
+  }
+  if (typeDescriptor.kind === 'promise') return resolvedReferenceOwner(typeDescriptor.value)
+  return null
+}
+
+function contractReturnOwner(contractIndex, owner, member, kind) {
+  const record = contractIndex.get(`${kind}|${owner}|${member}`)
+  if (!record || !Array.isArray(record.signatures)) return null
+  for (const signature of record.signatures) {
+    const resolvedOwner = resolvedReferenceOwner(signature?.return_type)
+    if (resolvedOwner) return resolvedOwner
+  }
+  return null
+}
+
+function callReturnReference(callee, contractIndex) {
+  if (callee?.type === 'instance_member') {
+    const owner = callee.returnOwner || contractReturnOwner(
+      contractIndex,
+      callee.instanceOwner,
+      callee.chain.at(-1),
+      'method',
+    )
+    if (owner) {
+      return {
+        type: 'instance',
+        owner,
+        provenance: [...(callee.provenance || []), `return-owner:${owner}`],
+      }
+    }
+  }
+  if (callee?.type === 'namespace') {
+    const segments = callee.path.split('.')
+    if (segments.length > 2) {
+      const owner = segments.slice(0, -1).join('.')
+      const returnOwner = contractReturnOwner(contractIndex, owner, segments.at(-1), 'method')
+      if (returnOwner) {
+        return {
+          type: 'instance',
+          owner: returnOwner,
+          provenance: [...(callee.provenance || []), `return-owner:${returnOwner}`],
+        }
+      }
+    }
+  }
+  return null
+}
+
+function resolveInstanceMember(base, property, contractIndex) {
+  const owner = base.type === 'instance' ? base.owner : base.returnOwner
+  if (owner) {
+    return {
+      type: 'instance_member',
+      instanceOwner: owner,
+      chain: [property],
+      returnOwner: contractReturnOwner(contractIndex, owner, property, 'property'),
+      provenance: [
+        ...(base.provenance || []),
+        ...(base.type === 'instance_member' ? [`nested-owner:${owner}`] : []),
+        `instance-member:${property}`,
+      ],
+    }
+  }
+  return {
+    ...base,
+    type: 'instance_member',
+    chain: [...(base.chain || []), property],
+    provenance: [...(base.provenance || []), `member:${property}`],
+  }
+}
+
+function loadContractIndex(contractPath) {
+  if (!contractPath) return new Map()
+  const resolvedPath = path.resolve(contractPath)
+  const contract = JSON.parse(fs.readFileSync(resolvedPath, 'utf8'))
+  // Legacy text signatures are intentionally excluded: a resolver may consume
+  // only the structured return type already accepted by the Contract validator.
+  if (contract.schema_version !== 3 || contract.signature_schema_version !== 1) return new Map()
+  const index = new Map()
+  for (const record of contract.apis || []) {
+    if (!record || !['existence_verified', 'behavior_verified'].includes(record.contract_state)) continue
+    if (record.usage_state === 'blocked') continue
+    if (!['method', 'property'].includes(record.kind)) continue
+    if (typeof record.owner !== 'string' || typeof record.name !== 'string') continue
+    if (!Array.isArray(record.signatures)) continue
+    if (!record.signatures.some((signature) => signature && typeof signature.return_type === 'object')) continue
+    index.set(`${record.kind}|${record.owner}|${record.name}`, record)
+  }
+  return index
+}
+
+function loadAliasEntries(aliasConfigPath) {
+  if (!aliasConfigPath) return []
+  const resolvedPath = path.resolve(aliasConfigPath)
+  const config = JSON.parse(fs.readFileSync(resolvedPath, 'utf8'))
+  const entries = []
+  const add = (prefix, replacement, baseDirectory = path.dirname(resolvedPath)) => {
+    if (typeof prefix !== 'string' || typeof replacement !== 'string') return
+    const wildcard = prefix.endsWith('*')
+    const normalizedPrefix = wildcard ? prefix.slice(0, -1) : prefix.endsWith('/') ? prefix : `${prefix}/`
+    const normalizedReplacement = wildcard ? replacement.replace(/\*$/, '') : replacement.endsWith('/') ? replacement : `${replacement}/`
+    entries.push({ prefix: normalizedPrefix, replacement: path.resolve(baseDirectory, normalizedReplacement) })
+  }
+  const paths = config.compilerOptions?.paths
+  const pathBase = config.compilerOptions?.baseUrl
+    ? path.resolve(path.dirname(resolvedPath), config.compilerOptions.baseUrl)
+    : path.dirname(resolvedPath)
+  if (paths && typeof paths === 'object') {
+    for (const [prefix, replacements] of Object.entries(paths)) {
+      const first = Array.isArray(replacements) ? replacements[0] : replacements
+      if (typeof first === 'string') add(prefix, first, pathBase)
+    }
+  }
+  const aliases = config.resolve?.alias ?? config.aliases
+  if (Array.isArray(aliases)) {
+    for (const alias of aliases) add(alias?.find, alias?.replacement)
+  } else if (aliases && typeof aliases === 'object') {
+    for (const [prefix, replacement] of Object.entries(aliases)) add(prefix, replacement)
+  }
+  return entries.sort((left, right) => right.prefix.length - left.prefix.length)
+}
+
 function setBinding(bindings, name, value) {
   if (!name || !value) return false
   const previous = bindings.get(name)
@@ -221,17 +350,17 @@ function setBinding(bindings, name, value) {
   return false
 }
 
-function resolveReference(node, bindings, constants) {
+function resolveReference(node, bindings, constants, contractIndex) {
   if (!node) return null
   if (node.type === 'Identifier') {
     if (node.name === 'THING') return { type: 'namespace', path: 'THING', provenance: ['global:THING'] }
     return bindings.get(node.name) || null
   }
   if (node.type === 'TSAsExpression' || node.type === 'TSTypeAssertion' || node.type === 'ParenthesizedExpression') {
-    return resolveReference(node.expression, bindings, constants)
+    return resolveReference(node.expression, bindings, constants, contractIndex)
   }
   if (node.type === 'NewExpression') {
-    const callee = resolveReference(node.callee, bindings, constants)
+    const callee = resolveReference(node.callee, bindings, constants, contractIndex)
     if (callee?.type === 'namespace') {
       return {
         type: 'instance',
@@ -241,9 +370,13 @@ function resolveReference(node, bindings, constants) {
     }
     return callee?.type === 'ambiguous' ? callee : null
   }
+  if (node.type === 'CallExpression' || node.type === 'OptionalCallExpression') {
+    const callee = resolveReference(node.callee, bindings, constants, contractIndex)
+    return callReturnReference(callee, contractIndex)
+  }
   if (node.type !== 'MemberExpression' && node.type !== 'OptionalMemberExpression') return null
 
-  const base = resolveReference(node.object, bindings, constants)
+  const base = resolveReference(node.object, bindings, constants, contractIndex)
   if (!base) return null
   if (base.type === 'ambiguous') return base
   const property = propertyName(node, constants)
@@ -262,24 +395,15 @@ function resolveReference(node, bindings, constants) {
     }
   }
   if (base.type === 'instance') {
-    return {
-      type: 'instance_member',
-      instanceOwner: base.owner,
-      chain: [property],
-      provenance: [...base.provenance, `instance-member:${property}`],
-    }
+    return resolveInstanceMember(base, property, contractIndex)
   }
   if (base.type === 'instance_member') {
-    return {
-      ...base,
-      chain: [...base.chain, property],
-      provenance: [...base.provenance, `member:${property}`],
-    }
+    return resolveInstanceMember(base, property, contractIndex)
   }
   return base.type === 'dynamic' ? base : null
 }
 
-function collectBindings(ast, constants) {
+function collectBindings(ast, constants, contractIndex) {
   const bindings = new Map()
   const declarations = []
   const assignments = []
@@ -292,7 +416,7 @@ function collectBindings(ast, constants) {
   for (let pass = 0; pass < 8; pass += 1) {
     let changed = false
     for (const declaration of declarations) {
-      const resolved = resolveReference(declaration.init, bindings, constants)
+      const resolved = resolveReference(declaration.init, bindings, constants, contractIndex)
       if (!resolved) continue
       if (declaration.id.type === 'Identifier') {
         changed = setBinding(
@@ -311,9 +435,14 @@ function collectBindings(ast, constants) {
           if (resolved.type === 'namespace') {
             memberBinding = { type: 'namespace', path: `${resolved.path}.${key}` }
           } else if (resolved.type === 'instance') {
-            memberBinding = { type: 'instance_member', instanceOwner: resolved.owner, chain: [key] }
+            memberBinding = {
+              type: 'instance_member',
+              instanceOwner: resolved.owner,
+              chain: [key],
+              returnOwner: contractReturnOwner(contractIndex, resolved.owner, key, 'property'),
+            }
           } else if (resolved.type === 'instance_member') {
-            memberBinding = { ...resolved, chain: [...resolved.chain, key] }
+            memberBinding = resolveInstanceMember(resolved, key, contractIndex)
           }
           if (!memberBinding) continue
           changed = setBinding(bindings, property.value.name, {
@@ -324,7 +453,7 @@ function collectBindings(ast, constants) {
       }
     }
     for (const assignment of assignments) {
-      const resolved = resolveReference(assignment.right, bindings, constants)
+      const resolved = resolveReference(assignment.right, bindings, constants, contractIndex)
       if (resolved) changed = setBinding(bindings, assignment.left.name, resolved) || changed
     }
     if (!changed) break
@@ -480,9 +609,9 @@ function isNestedMemberObject(node, parent) {
   )
 }
 
-function analyzeSegment(filename, relativePath, segment) {
+function analyzeSegment(filename, relativePath, segment, contractIndex) {
   const constants = collectConstants(segment.ast)
-  const bindings = collectBindings(segment.ast, constants)
+  const bindings = collectBindings(segment.ast, constants, contractIndex)
   const entities = []
   const imports = []
   const unresolvedImports = []
@@ -532,7 +661,7 @@ function analyzeSegment(filename, relativePath, segment) {
     const isMember = node.type === 'MemberExpression' || node.type === 'OptionalMemberExpression'
     if (isMember) {
       if (isNestedMemberObject(node, parent)) return
-      const reference = resolveReference(node, bindings, constants)
+      const reference = resolveReference(node, bindings, constants, contractIndex)
       const entity = buildUsageEntity({
         filename,
         relativePath,
@@ -548,7 +677,7 @@ function analyzeSegment(filename, relativePath, segment) {
 
     // `new AppAlias()` 没有 MemberExpression，需要从别名绑定补出构造使用。
     if (node.type === 'NewExpression' && node.callee.type === 'Identifier') {
-      const reference = resolveReference(node.callee, bindings, constants)
+      const reference = resolveReference(node.callee, bindings, constants, contractIndex)
       if (reference?.type !== 'namespace') return
       const syntheticParent = { type: 'NewExpression', callee: node.callee, arguments: node.arguments }
       syntheticParent.start = node.start
@@ -567,7 +696,7 @@ function analyzeSegment(filename, relativePath, segment) {
 
     // 方法/函数从 THING owner 上解构或赋值为本地别名后，调用点仍需回溯原 owner。
     if (node.type === 'CallExpression' && node.callee.type === 'Identifier') {
-      const reference = resolveReference(node.callee, bindings, constants)
+      const reference = resolveReference(node.callee, bindings, constants, contractIndex)
       if (!reference || !['namespace', 'instance_member', 'dynamic', 'ambiguous'].includes(reference.type)) return
       const syntheticParent = { type: 'CallExpression', callee: node.callee, arguments: node.arguments }
       syntheticParent.start = node.start
@@ -598,11 +727,14 @@ function isAnalyzableSourceImport(specifier) {
   return extension === '' || SOURCE_EXTENSIONS.has(extension)
 }
 
-function resolveImport(projectRoot, fromFile, specifier, sourceSet) {
-  if (!isProjectImport(specifier) || !isAnalyzableSourceImport(specifier)) return null
+function resolveImport(projectRoot, fromFile, specifier, sourceSet, aliasEntries) {
+  const configuredAlias = aliasEntries.find((entry) => specifier === entry.prefix.slice(0, -1) || specifier.startsWith(entry.prefix))
+  if ((!isProjectImport(specifier) && !configuredAlias) || !isAnalyzableSourceImport(specifier)) return null
   const cleanSpecifier = specifier.split(/[?#]/, 1)[0]
   let base
-  if (cleanSpecifier.startsWith('@/')) base = path.resolve(projectRoot, 'src', cleanSpecifier.slice(2))
+  const cleanConfiguredAlias = aliasEntries.find((entry) => cleanSpecifier === entry.prefix.slice(0, -1) || cleanSpecifier.startsWith(entry.prefix))
+  if (cleanConfiguredAlias) base = path.resolve(cleanConfiguredAlias.replacement, cleanSpecifier.slice(cleanConfiguredAlias.prefix.length))
+  else if (cleanSpecifier.startsWith('@/')) base = path.resolve(projectRoot, 'src', cleanSpecifier.slice(2))
   else if (cleanSpecifier.startsWith('~/')) base = path.resolve(projectRoot, cleanSpecifier.slice(2))
   else if (cleanSpecifier.startsWith('/')) base = path.resolve(projectRoot, cleanSpecifier.slice(1))
   else base = path.resolve(path.dirname(fromFile), cleanSpecifier)
@@ -648,6 +780,8 @@ function main() {
 
   const projectRoot = path.resolve(args.projectRoot)
   const parserRoot = path.resolve(args.parserRoot || projectRoot)
+  const contractIndex = loadContractIndex(args.contract)
+  const aliasEntries = loadAliasEntries(args.aliasConfig)
   const projectRequire = createRequire(path.join(parserRoot, 'package.json'))
   const babelParser = projectRequire('@babel/parser')
   let vueCompiler = null
@@ -686,15 +820,15 @@ function main() {
 
     const coveredTokens = new Set()
     for (const segment of segments) {
-      const analysis = analyzeSegment(filename, relativePath, segment)
+      const analysis = analyzeSegment(filename, relativePath, segment, contractIndex)
       usageEntities.push(...analysis.entities)
       for (const entity of analysis.entities) {
         for (const token of entity.expression.match(THING_TOKEN_PATTERN) || []) coveredTokens.add(token)
       }
       for (const specifier of analysis.imports) {
-        const resolved = resolveImport(projectRoot, filename, specifier, sourceSet)
+        const resolved = resolveImport(projectRoot, filename, specifier, sourceSet, aliasEntries)
         if (resolved) importGraph.get(path.normalize(filename)).push(path.normalize(resolved))
-        else if (isProjectImport(specifier) && isAnalyzableSourceImport(specifier)) {
+        else if ((isProjectImport(specifier) || aliasEntries.some((entry) => specifier.startsWith(entry.prefix))) && isAnalyzableSourceImport(specifier)) {
           reachabilityGaps.push({
             specifier,
             reason: 'local_import_unresolved',
@@ -743,6 +877,8 @@ function main() {
       javascript_typescript: '@babel/parser',
       vue_sfc: '@vue/compiler-sfc -> @babel/parser',
       symbol_mode: 'file-scope alias/destructuring and constructor-instance resolution',
+      contract_return_types: args.contract ? 'structured reference/Promise<reference> only' : 'disabled',
+      alias_config: args.aliasConfig ? 'explicit JSON profile' : 'built-in @/ and ~/',
       production_reachability: 'static module import graph',
       regex_role: 'discovery_fallback_only',
     },
@@ -767,7 +903,7 @@ function main() {
       'Lexical path sensitivity is conservative; conflicting aliases across scopes become ambiguous.',
       'Imported values are not treated as ThingJS aliases without local provenance.',
       'Static reachability supports relative, root, @/, and ~/ imports; unresolved production imports block validation.',
-      'Nested instance paths require Contract return-type information and remain ambiguous in v1.',
+      'Nested instance paths require schema-3 structured Contract return-type information; unknown or legacy returns remain unresolved.',
       'Regex findings are never verified Usage Entities.',
     ],
   }

@@ -158,7 +158,10 @@ Never promote a commit, successful build, or mock-only test into an official API
   structured signatures; use `--check` in CI to detect generated declaration
   drift. Legacy text signatures and unresolved types are omitted, never guessed.
 - Run `scripts/extract_usage_surface.mjs` for JavaScript, TypeScript, and Vue script
-  blocks. Regex findings remain non-authoritative fallback output.
+  blocks. Pass the pinned schema-3 Contract with `--contract` to resolve nested
+  instance owners only from structured return types; pass an explicit JSON alias
+  profile with `--alias-config` when project paths are not covered by `@/` or `~/`.
+  Regex findings remain non-authoritative fallback output.
 - Run `scripts/validate_contract.py` for isolated checks, or
   `scripts/run_contract_ci.py` for preflight, extraction, validation, and a
   machine-readable CI report.

@@ -89,6 +89,40 @@ def make_contract() -> dict:
     }
 
 
+def make_structured_resolver_contract() -> dict:
+    """为 nested-instance resolver 提供受控 return owner，不从 runtime 推导类型。"""
+
+    def record(kind: str, owner: str, name: str, return_type: dict) -> dict:
+        return {
+            "id": f"structured.{owner}.{name}",
+            "kind": kind,
+            "owner": owner,
+            "name": name,
+            "contract_state": "existence_verified",
+            "usage_state": "allowed",
+            "signatures": [
+                {
+                    "text": f"{owner}.{name}",
+                    "parameters": [],
+                    "return_type": return_type,
+                    "async": False,
+                    "lifecycle": [],
+                }
+            ],
+        }
+
+    return {
+        "schema_version": 3,
+        "signature_schema_version": 1,
+        "contract_id": "fixture-resolver-v2",
+        "apis": [
+            record("property", "THING.Entity", "scene", {"kind": "reference", "name": "THING.Scene"}),
+            record("method", "THING.Entity", "getScene", {"kind": "reference", "name": "THING.Scene"}),
+            record("method", "THING.Scene", "load", {"kind": "primitive", "name": "boolean"}),
+        ],
+    }
+
+
 def make_surface() -> dict:
     """Surface 只证明成员存在，并通过 inheritance 连接 Entity/BaseObject。"""
 
@@ -134,12 +168,16 @@ def run_usage_extractor(node: str, parser_root: str, temp_root: Path) -> dict:
             [
                 "import './View.vue'",
                 "import '@/helper'",
+                "import '@custom/helper'",
                 "import './missing-local.js'",
                 "const T = THING",
                 "const { Entity } = T",
                 "const appClass = 'App'",
                 "const app = new T[appClass]()",
                 "const entity = new Entity()",
+                "const scene = entity.scene",
+                "scene.load()",
+                "entity.getScene().load()",
                 "const { destroy: destroyEntity } = entity",
                 "app.on('click', null, () => {}, 'fixture')",
                 "entity.destroy()",
@@ -156,6 +194,18 @@ def run_usage_extractor(node: str, parser_root: str, temp_root: Path) -> dict:
     )
     (temp_root / "src" / "helper.ts").write_text(
         "export const helperEntity = new THING.Entity()\n",
+        encoding="utf-8",
+    )
+    (temp_root / "src" / "custom").mkdir()
+    (temp_root / "src" / "custom" / "helper.ts").write_text(
+        "export const configuredAliasEntity = new THING.Entity()\n",
+        encoding="utf-8",
+    )
+    contract_path = temp_root / "resolver-contract.json"
+    contract_path.write_text(json.dumps(make_structured_resolver_contract()), encoding="utf-8")
+    alias_config = temp_root / "alias-config.json"
+    alias_config.write_text(
+        json.dumps({"compilerOptions": {"paths": {"@custom/*": ["src/custom/*"]}}}),
         encoding="utf-8",
     )
     (temp_root / "src" / "broken.js").write_text(
@@ -179,6 +229,10 @@ def run_usage_extractor(node: str, parser_root: str, temp_root: Path) -> dict:
             parser_root,
             "--output",
             str(output),
+            "--contract",
+            str(contract_path),
+            "--alias-config",
+            str(alias_config),
             "--entry",
             "src/main.js",
             "--entry",
@@ -245,6 +299,13 @@ def main() -> int:
         and "destructure:destroy->destroyEntity" in entity["alias_provenance"]
         for entity in entities
     )
+    assert any(entity["canonical_key"] == "method|THING.Scene|load" for entity in entities)
+    assert not any(
+        entity["resolution_status"] == "ambiguous" and "Scene" in entity.get("expression", "")
+        for entity in entities
+    )
+    assert usage["resolver"]["contract_return_types"] == "structured reference/Promise<reference> only"
+    assert usage["resolver"]["alias_config"] == "explicit JSON profile"
     assert any(
         entity["source"]["path"] == "src/helper.ts" and entity["production_reachable"] is True
         for entity in entities
@@ -383,6 +444,9 @@ def main() -> int:
                 "checks": [
                     "ast_alias_destructuring_computed",
                     "destructured_instance_method_alias",
+                    "contract_return_type_nested_owner",
+                    "structured_method_return_nested_owner",
+                    "explicit_alias_config_reachability",
                     "vue_script_setup",
                     "root_alias_reachability",
                     "unresolved_production_import_block",

@@ -90,6 +90,13 @@ Generate Usage Surface with `extract_usage_surface.mjs`.
   then use the same Babel analysis and Usage Entity schema.
 - Resolve direct `THING` paths, local aliases, destructuring, constructor instances,
   and statically evaluable computed properties.
+- When `--contract <schema-3-json>` is supplied, consume only structured
+  `reference` or `Promise<reference>` return types to resolve nested instance
+  owners; schema-2/legacy text Contracts disable this enhancement rather than
+  guessing.
+- When `--alias-config <json>` is supplied, consume an explicit JSON export of
+  `compilerOptions.paths`, `resolve.alias`, or `aliases`; the extractor never
+  executes arbitrary Vite/TypeScript configuration code.
 - Use a static module import graph for initial production reachability.
 - Resolve relative, project-root, `@/`-to-`src`, and `~/`-to-root import forms.
   A production-reachable unresolved local or dynamic import is a blocking

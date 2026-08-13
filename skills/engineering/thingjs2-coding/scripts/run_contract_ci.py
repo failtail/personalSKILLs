@@ -21,6 +21,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--parser-root")
     parser.add_argument("--entry", action="append", default=[])
     parser.add_argument("--allowlist")
+    parser.add_argument("--alias-config", help="Optional JSON export of TypeScript/Vite path aliases.")
     parser.add_argument(
         "--dts-output",
         help="Optional generated .d.ts path; when provided, --check detects declaration drift.",
@@ -79,9 +80,13 @@ def main() -> int:
         args.parser_root or args.project_root,
         "--output",
         str(usage),
+        "--contract",
+        args.contract,
     ]
     for entry in args.entry:
         usage_command.extend(["--entry", entry])
+    if args.alias_config:
+        usage_command.extend(["--alias-config", args.alias_config])
     usage_code = run(usage_command, output_dir / "usage.stdout.json")
     steps.append({"name": "usage_surface", "exit_code": usage_code})
     if usage_code != 0:
