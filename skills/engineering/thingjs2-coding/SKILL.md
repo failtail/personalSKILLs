@@ -169,6 +169,10 @@ Never promote a commit, successful build, or mock-only test into an official API
   evidence is available to aggregate production-reachable missing Contract
   keys into JSON and Markdown triage output. The queue is review metadata only;
   it never promotes a Contract record.
+- Run `scripts/test_behavior_test_schema.py` before accepting lifecycle evidence.
+  Behavior traces must retain exact Artifact Set, ownership, operation
+  generation, cancellation/late-effect, and cleanup assertions; synthetic tests
+  validate the harness only and never create `behavior_verified` API facts.
 - Read [contract-pipeline.md](references/contract-pipeline.md) before changing the
   Contract schema, Runtime Surface probe, Usage Surface resolver, allowlist, or CI.
 

@@ -177,6 +177,21 @@ Warn, but do not block solely because:
 - Regex found an unmodeled token outside verified AST entities;
 - a parse failure or unknown usage is outside the production import graph.
 
+## Runtime Behavior Test boundary
+
+Keep lifecycle evidence in an independent Behavior Test document and validate it
+with `scripts/behavior_test_schema.py`. The minimum record binds the exact
+`artifact_set_id`, canonical `contract_refs`, scenario preconditions, stimulus,
+ordered trace, resource/listener ledgers, effects, machine assertions, cleanup,
+and result evidence reference. The validator rejects accepted effects from a
+cancelled operation, release/unbind order violations, duplicate trace sequence,
+cleanup residuals on a passed result, and non-idempotent teardown.
+
+The synthetic regression proves only these schema/invariant checks. A real
+browser Behavior Test must still prove the exact ThingJS lifecycle and may then
+be referenced by a Contract projection; it cannot supply a missing owner or
+signature and cannot be replaced by Runtime Surface existence evidence.
+
 ## Usage Promotion Queue
 
 Use `scripts/build_usage_promotion_queue.py` after the Usage Surface, pinned

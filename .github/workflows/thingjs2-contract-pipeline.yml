@@ -33,6 +33,7 @@ jobs:
           skills/engineering/thingjs2-coding/scripts/build_versioned_contract.py
           skills/engineering/thingjs2-coding/scripts/contract_signature_schema.py
           skills/engineering/thingjs2-coding/scripts/generate_contract_dts.py
+          skills/engineering/thingjs2-coding/scripts/behavior_test_schema.py
           skills/engineering/thingjs2-coding/scripts/validate_contract.py
           skills/engineering/thingjs2-coding/scripts/run_contract_ci.py
           skills/engineering/thingjs2-coding/scripts/test_contract_pipeline.py
@@ -52,3 +53,5 @@ jobs:
         run: python skills/engineering/thingjs2-coding/scripts/test_usage_promotion_queue.py
       - name: Run structured Contract and declaration test
         run: python skills/engineering/thingjs2-coding/scripts/test_structured_contract.py
+      - name: Run synthetic Behavior Test schema
+        run: python skills/engineering/thingjs2-coding/scripts/test_behavior_test_schema.py
