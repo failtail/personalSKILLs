@@ -159,6 +159,10 @@ Never promote a commit, successful build, or mock-only test into an official API
 - Run `scripts/validate_contract.py` for isolated checks, or
   `scripts/run_contract_ci.py` for preflight, extraction, validation, and a
   machine-readable CI report.
+- Run `scripts/build_usage_promotion_queue.py` after Usage/Contract/Runtime
+  evidence is available to aggregate production-reachable missing Contract
+  keys into JSON and Markdown triage output. The queue is review metadata only;
+  it never promotes a Contract record.
 - Read [contract-pipeline.md](references/contract-pipeline.md) before changing the
   Contract schema, Runtime Surface probe, Usage Surface resolver, allowlist, or CI.
 

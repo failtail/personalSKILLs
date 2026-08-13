@@ -170,6 +170,23 @@ Warn, but do not block solely because:
 - Regex found an unmodeled token outside verified AST entities;
 - a parse failure or unknown usage is outside the production import graph.
 
+## Usage Promotion Queue
+
+Use `scripts/build_usage_promotion_queue.py` after the Usage Surface, pinned
+Contract, Runtime Surface, and optional legacy API Cache are available. The
+script groups only production-reachable `resolved`/`resolved_inherited` Usage
+Entities whose canonical `kind|owner|member` is absent from the Contract. It
+retains Usage IDs and source locations, counts files and calls, and attaches
+Runtime existence, official-evidence status, domain triage, and lifecycle-risk
+metadata before producing JSON and Markdown.
+
+Regex findings, non-production tokens, ambiguous/dynamic/parse-failed entities,
+and API records already covered through the Runtime inheritance graph are not
+promotion candidates. The output is a deterministic review queue, not a
+Contract mutation or a claim that a member is safe to execute. Runtime Surface
+still proves existence only; official owner/signature evidence and independent
+behavior tests remain separate gates.
+
 ## TypeScript declaration boundary
 
 Generate `.d.ts` only from structured, verified Contract signatures. Runtime

@@ -34,6 +34,8 @@ jobs:
           skills/engineering/thingjs2-coding/scripts/validate_contract.py
           skills/engineering/thingjs2-coding/scripts/run_contract_ci.py
           skills/engineering/thingjs2-coding/scripts/test_contract_pipeline.py
+          skills/engineering/thingjs2-coding/scripts/build_usage_promotion_queue.py
+          skills/engineering/thingjs2-coding/scripts/test_usage_promotion_queue.py
       - name: Check Node tools
         run: |
           node --check skills/engineering/thingjs2-coding/scripts/extract_usage_surface.mjs
@@ -43,3 +45,5 @@ jobs:
           python skills/engineering/thingjs2-coding/scripts/test_contract_pipeline.py
           --parser-root .
           --node node
+      - name: Run synthetic Usage Promotion Queue
+        run: python skills/engineering/thingjs2-coding/scripts/test_usage_promotion_queue.py
