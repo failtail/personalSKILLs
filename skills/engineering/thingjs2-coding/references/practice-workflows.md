@@ -3,7 +3,7 @@
 This file maps the supplied engineer corpus to reusable workflows without
 turning the corpus into an unverified API encyclopedia. Read it when a task
 matches one of these workflows. Keep exact signatures in the official API
-source or the lightweight API Cache.
+source evidence and the versioned Contract.
 
 ## Workflow contract
 

@@ -12,6 +12,10 @@ Use independent evidence dimensions instead of one ambiguous confidence score.
 | Recipe | A verified solution for a project scenario | No; references API facts |
 | Incident | Failed, reverted, paused, or misleading implementation | No |
 | Project profile | SDK fingerprint and project constraints | Only for project compatibility |
+| Runtime Surface | Browser descriptor observation for one exact SDK Artifact Set | Existence only |
+| Runtime Behavior Test | Executed lifecycle, ordering, rendering, readiness, cleanup, or failure scenario | Project behavior only |
+| Versioned Contract | Normalized API records bound to one SDK Artifact Set | Machine entry derived from controlled facts |
+| Project ThingJS Usage Surface | AST-derived source usage and resolution provenance | No; defines what project code must validate |
 | Evaluation | Repeatable task, acceptance criteria, and outcome | No |
 
 ## Evidence labels
@@ -20,28 +24,38 @@ Apply one or more labels while preserving their different meanings:
 
 - `official_verified`: an exact official ThingJS 2.0 page supports the claim.
 - `official_unversioned`: an official 2.0 page supports the claim but does not identify a precise SDK build.
-- `runtime_verified`: the claim passed a recorded probe against an identified SDK artifact.
-- `runtime_conflict`: an identified SDK disagrees with the official claim or expected behavior.
+- `existence_verified`: the member was observed through descriptor inspection against
+  an identified SDK Artifact Set; no behavior is implied.
+- `behavior_verified`: an independent behavior scenario passed against that exact
+  Artifact Set and recorded its preconditions and cleanup.
+- `runtime_conflict`: an identified Artifact Set disagrees with controlled target-version
+  evidence or fails a required behavior test.
 - `project_verified`: a complete project behavior passed real runtime acceptance.
 - `unit_verified`: a deterministic unit test passed, possibly with mocks.
 - `internal_only`: the claim exists only in private/internal material.
 - `historical_incident`: Git or project history proves an attempt and its outcome, not official validity.
 - `unverified`: evidence is missing or insufficient.
 
-Do not collapse `unit_verified` into `runtime_verified`. A mock can prove orchestration and cleanup calls, but it cannot prove that ThingJS exposes the mocked API.
+Do not collapse `unit_verified`, `existence_verified`, and `behavior_verified`. A
+mock can prove orchestration; descriptor inspection can prove a member exists; only
+the behavior test can prove lifecycle or rendering behavior.
 
 ## API usage eligibility
 
 | Evidence | Current-project use |
 | --- | --- |
 | Official ThingJS 2.0 evidence, no known runtime conflict | Allowed, subject to lifecycle completeness |
-| Official evidence plus `runtime_verified` | Preferred |
+| Official evidence plus `existence_verified` | Preferred for member existence |
+| Official evidence plus matching `behavior_verified` | Required for behavior-dependent release claims |
 | Official evidence plus `runtime_conflict` | Blocked for that project |
 | `internal_only` | Blocked until reconciled with official evidence |
 | Repository code or Git commit only | Blocked as API evidence |
 | Unknown-version example | Rejected |
 
-An API record may remain official and still be blocked in one project. Represent that with a project runtime verification record; do not rewrite the canonical official signature.
+An API record may remain official and still be blocked in one project. Represent that
+in the Artifact-Set-bound Contract or behavior record; do not rewrite the controlled
+official signature. A change observed only on an unversioned latest official page is
+`stale_review`; it does not invalidate a Contract for an older target SDK by itself.
 
 ## Recipe promotion
 

@@ -31,7 +31,7 @@ when all of the following are true:
 This is provenance-gated trust, not blind acceptance of every search hit. The
 Context7 channel does not make a wrong-owner snippet correct. Preserve the
 Context7 library ID, original URL, query, retrieval time, and evidence label in
-the local API Cache record.
+the controlled source record upstream of the versioned Contract.
 
 ## Known rejection cases
 

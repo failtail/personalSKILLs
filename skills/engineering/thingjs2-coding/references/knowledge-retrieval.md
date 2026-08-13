@@ -5,8 +5,8 @@ decision about whether a local engineer example can be reused.
 
 ## Evidence order
 
-1. Identify the ThingJS domain and the target project's SDK/runtime fingerprint.
-2. Read the smallest matching verified API record or project Overlay.
+1. Identify the ThingJS domain and the target project's complete SDK Artifact Set.
+2. Read the smallest matching versioned Contract record and project Overlay.
 3. Query only the allowlisted official Context7 libraries when a fact is missing.
 4. Check the result's exact public owner, member, signature, original official URL,
    and ThingJS 2.0 scope. Context7 is a retrieval channel, not automatic proof.
@@ -20,8 +20,9 @@ decision about whether a local engineer example can be reused.
 
 - If existence, owner, signature, version, or lifecycle behavior is unknown,
   report `unknown/unverified` and do not generate that call.
-- If project runtime conflicts with an official fact, preserve both records and
-  block the API for that project. Do not invent a compatibility fallback.
+- If controlled target-version evidence conflicts with the Contract, preserve both
+  records and block the API for that project. If only an unversioned latest page
+  changed, mark `stale_review`. Do not invent a compatibility fallback.
 - If an example demonstrates ordering but not a signature, use its ordering only.
 - If an internal/private-looking page or wrong-owner result appears, record an
   Incident and return to a public official source.

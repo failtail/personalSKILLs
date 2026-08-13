@@ -30,6 +30,14 @@ repository unless the user explicitly provides a public-safe excerpt.
   source URL, public owner/member/signature and ThingJS 2.0 provenance checks.
 - Keep the ThingJS Skill progressively disclosed: load source-trust and
   engineer-practice references only for the matching task domain.
+- Use the Artifact-Set-bound versioned Contract as the only machine-consumption
+  API entry. Runtime Surface proves existence only; behavior requires an
+  independent Runtime Behavior Test.
+- Generate Project ThingJS Usage Surface primarily through AST analysis for
+  JavaScript, TypeScript, and Vue script blocks. Regex findings are discovery
+  fallback and cannot create verified usage.
+- Block controlled target-version mismatches and production unresolved usage;
+  treat unversioned latest official changes as `stale_review`.
 - If Context7 is unavailable, partial, waiting, rejected, incomplete, or lacks
   a source, use the approved official web sources and local project evidence.
 - Use internal/project evidence for project constraints, compatibility, recipes,

@@ -238,3 +238,65 @@ artifact existence, `NOT_RUN`/artifact consistency, activation counts, and the c
 coverage gate; it does not pretend to be a model selector or promote partial runtime
 evidence to API truth. Public Skill files contain only this contract and sanitized
 references, never the private fixtures or runtime records.
+
+## 2026-08-13 versioned Contract and AST Usage Surface
+
+This phase replaces the selective API Cache as a machine-facing runtime decision
+surface. Historical Registry JSON remains a migration input, but the active path is:
+
+```text
+SDK Artifact Set
+    ↓
+Browser Runtime Surface (existence only)
+    ↓
+Versioned JSON Contract ← controlled official evidence
+    ↓
+Skill / Validator / CI / derived .d.ts
+    ↓
+Project ThingJS Usage Surface (AST primary)
+    ↓
+Project code and separate Runtime Behavior Tests
+```
+
+Two release-policy corrections are now explicit. First, only a mismatch with
+controlled evidence for the target SDK version blocks; an unversioned latest official
+page creates `stale_review`. Second, compatibility validation targets the complete
+Project ThingJS Usage Surface and full SDK Artifact Set, not a Regex list of `THING.*`
+tokens or one core SDK hash.
+
+The reusable implementation adds:
+
+- a browser descriptor probe that records constructors, namespace members, direct
+  prototype members, and inheritance edges without invoking constructors, getters,
+  or methods;
+- a Babel/Vue SFC AST extractor with one Usage Entity schema for JavaScript,
+  TypeScript, `<script>`, and `<script setup>`;
+- alias, destructuring, constructor-instance, static-computed-property, source
+  location, argument-shape, and static-import-reachability tracking;
+- a Regex discovery fallback that cannot create or overwrite a verified entity;
+- an exact-Artifact-Set allowlist gate for production unresolved access;
+- a Contract migrator, standalone validator, CI orchestrator, synthetic regression
+  suite, and public GitHub Actions workflow.
+
+The implementation deliberately does not claim full cross-module value flow or a
+runtime call graph. Nested instance paths remain `ambiguous` until structured Contract
+return types or a later resolver can prove their owner. Those production-reachable
+items block rather than being bulk-allowlisted.
+
+An implementation review caught one unsafe migration behavior before release: legacy
+`runtime_verifications: supported` records were initially capable of promoting an API
+to `behavior_verified`. The final migrator preserves those records only as legacy audit
+data. Behavior promotion now requires a passed scenario, an evidence reference, and an
+exact `artifact_set_id`; the validator independently enforces the same invariant.
+
+Synthetic validation covers direct/alias/destructured/static-computed access, Vue SFC,
+dynamic blocking, narrow allowlisting, inherited owners, unversioned-latest review,
+artifact drift, Regex fallback, and legacy-runtime non-promotion. Exact project roots,
+artifact hashes, Runtime/Usage Surface files, allowlists, unresolved code positions,
+and target behavior remain in the user-level workspace and are not committed here.
+
+The PDF design discussion influenced the identity/core-rule/reference separation,
+API whitelist mindset, real-file inspection, and CI binding. It did not override the
+ThingJS evidence hierarchy. Search ranking infrastructure remains deferred; the next
+valuable work is increasing controlled Contract coverage and adding narrowly scoped
+Runtime Behavior Tests.

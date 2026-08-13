@@ -18,6 +18,8 @@ from typing import Any
 SCHEMA_VERSION = 1
 SOURCE_SUFFIXES = {".js", ".mjs", ".cjs", ".ts", ".vue", ".html"}
 SKIP_DIRECTORIES = {
+    ".agents",
+    ".codex",
     ".codex-logs",
     ".codex-ref",
     ".codex-ref-repos",

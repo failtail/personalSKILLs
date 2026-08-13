@@ -1,7 +1,8 @@
 # ThingJS 2.0 Skill evaluation
 
-Evaluate four layers separately: activation, progressive routing, output behavior,
-and real engine runtime. A pass in one layer never implies a pass in another.
+Evaluate five layers separately: activation, progressive routing, output behavior,
+Contract pipeline, and real engine behavior. A pass in one layer never implies a
+pass in another.
 
 ## A. Activation tests: metadata only
 
@@ -88,10 +89,41 @@ and apply its preconditions without generalizing it to every project.
 
 ## D. Runtime proof
 
-For behavior that depends on the real engine, record the target SDK fingerprint, the
-exact scenario, browser/runtime result, cleanup observation, and unresolved visual
-behavior. A build, mock, Git commit, public example, or agent report cannot substitute
-for target-project runtime evidence.
+Split runtime proof into two independent artifacts:
+
+- Runtime Surface records descriptor-based member existence for an exact SDK
+  Artifact Set. It must fail capture if an artifact fails to load and must not invoke
+  constructors, getters, or methods while discovering members.
+- Runtime Behavior Test records one exact scenario, preconditions, browser result,
+  cleanup observation, and unresolved visual behavior for the same Artifact Set.
+
+A build, mock, Git commit, public example, Runtime Surface, or agent report cannot
+substitute for target-project behavior evidence.
+
+## E. Contract pipeline tests
+
+Run the synthetic pipeline tests and at least one real-project dry run when changing
+the Contract schema, Usage Surface extractor, validator, allowlist, or CI wrapper.
+
+Required synthetic cases:
+
+| ID | Case | Expected result |
+| --- | --- | --- |
+| C01 | Direct, alias, destructured, and static computed ThingJS access in JS/TS | Resolved Usage Entities with provenance |
+| C02 | Vue `<script>` and `<script setup>` access | Same Usage Entity schema as JS/TS |
+| C03 | Production-reachable dynamic property access | Blocked without exact allowlist |
+| C04 | Exact Usage-ID/expression allowlist bound to the Artifact Set | Only the matching Usage Entity passes |
+| C05 | Inherited prototype member | Resolves through captured inheritance edges |
+| C06 | Unversioned latest official change | `stale_review`, not automatic block |
+| C07 | Current artifact differs from Contract binding | Block |
+| C08 | Regex fallback finds a token | Discovery only; no verified Usage Entity |
+| C09 | Production entry reaches an unresolved local/dynamic import | Block as incomplete reachability |
+| C10 | Broad or expression-mismatched dynamic allowlist | Ignore exception and keep the Usage Entity blocked |
+
+A real-project non-zero result is a valid pipeline outcome when the report identifies
+genuine missing Contract coverage or unresolved production usage. Report it as an
+expected block with counts and evidence paths, not as a tool failure or a successful
+release.
 
 ## Result record
 
@@ -100,8 +132,8 @@ business code, SDK fingerprints, private URLs, and raw runtime logs in the user'
 workspace; commit only sanitized summaries.
 
 ```yaml
-case_id: A01 | R01 | T1 | runtime-id
-layer: activation | routing | output | runtime
+case_id: A01 | R01 | T1 | C01 | runtime-id
+layer: activation | routing | output | contract | runtime_surface | runtime_behavior
 result: PASS | PARTIAL | FAIL | NOT_RUN
 coverage_result: PASS | PARTIAL | FAIL | NOT_RUN
 quality_result: PASS | PARTIAL | FAIL | NOT_RUN
@@ -116,7 +148,7 @@ official_web_used: true | false
 local_kb_used: true | false
 unknown_api: true | false
 version_pollution: true | false
-runtime_result: supported | conflict | not_tested | inconclusive
+runtime_result: existence_verified | behavior_verified | conflict | not_tested | inconclusive
 notes: "Evidence, failure class, or follow-up."
 ```
 
@@ -125,6 +157,7 @@ notes: "Evidence, failure class, or follow-up."
 - `activation_false_positive` or `activation_false_negative`
 - `routing_overload`, `routing_gap`, or `routing_stop_failure`
 - `skill_workflow`
+- `contract_schema`, `artifact_drift`, `usage_resolution`, or `allowlist_scope`
 - `missing_public_evidence`
 - `missing_local_knowledge`
 - `project_runtime`
@@ -142,10 +175,13 @@ Before claiming the Skill change is validated:
 2. rerun A01-A13 against the revised metadata;
 3. run the routing cases affected by the change and inspect their load traces;
 4. run the relevant T1-T5 behavior tests;
-5. state target runtime cases as passed, partial, conflicting, or not run;
-6. run the user-level replay checker, when present, against the exact fixtures and
+5. run the synthetic Contract pipeline and record any real-project expected block;
+6. state Runtime Surface and Runtime Behavior cases separately as passed, partial,
+   conflicting, or not run;
+7. run the user-level replay checker, when present, against the exact fixtures and
    result record; its complete mode must fail while any required case is `NOT_RUN`;
-7. obtain an independent review of the actual artifacts and evidence.
+8. inspect the complete diff, public/private boundary, generated reports, and
+   installed-copy equality before release.
 
 Fresh commands and artifacts must support every completion claim. Five behavior tests
 passing does not prove activation quality, progressive loading, complete API coverage,

@@ -14,9 +14,14 @@ Keep official facts, examples, project Recipes, and Incidents separate.
 - Generate only native ThingJS 2.0 code.
 - Treat official ThingJS 2.0 API and documentation as normative.
 - Use internal or project documentation only as supplementary evidence.
-- Record the target project's exact SDK fingerprint when a local artifact exists.
-- Block a project API when runtime evidence conflicts with the official description;
-  preserve both claims instead of rewriting official truth.
+- Bind compatibility claims to the target project's complete SDK Artifact Set,
+  including the core SDK and every loaded campus, Earth, or other plugin artifact.
+- Treat descriptor-based Runtime Surface evidence as proof of member existence only;
+  require a separate Runtime Behavior Test for lifecycle, ordering, rendering,
+  readiness, cleanup, or failure claims.
+- Block when a Contract disagrees with controlled evidence for the target SDK
+  version. Treat changes on an unversioned latest official page as `stale_review`,
+  not as an automatic incompatibility.
 - Reject 1.x, compatibility, migration, t3d-derived, private, guessed, and
   unknown-version members.
 - Follow the target repository's host-framework conventions; do not prescribe
@@ -47,8 +52,8 @@ The disclosure layers are:
 | Metadata | Always | Trigger and exclusion conditions only |
 | This file | After activation | Stable execution and safety contract |
 | Public references | Selected by the router | One task/domain evidence bundle |
-| User/project evidence | The task targets a real project or private constraint | Overlay, API cache, Recipe, Incident |
-| Scripts | A deterministic check is needed | Preflight or registry validation; execute without loading source unless debugging it |
+| User/project evidence | The task targets a real project or private constraint | Overlay, Contract, Usage/Runtime Surface, Recipe, Incident |
+| Scripts | A deterministic check is needed | Preflight, extraction, Contract or CI validation; execute without loading source unless debugging it |
 
 Use these direct references only through the router:
 
@@ -61,6 +66,7 @@ Use these direct references only through the router:
 - Project compatibility: [project-overlay.md](references/project-overlay.md).
 - Evidence promotion: [evidence-model.md](references/evidence-model.md) and
   [knowledge-schema.md](references/knowledge-schema.md).
+- Version-bound compatibility and CI: [contract-pipeline.md](references/contract-pipeline.md).
 - Skill maintenance: [evaluation.md](references/evaluation.md) and
   [hybrid-policy.md](references/hybrid-policy.md).
 
@@ -78,8 +84,11 @@ outside this public Skill.
 3. For a target project, resolve its user-level Overlay from
    `<codex-home>/thingjs2-ai/project-index.json`. Run `scripts/preflight.py` when
    the profile is absent or stale.
-4. If the target version remains unknown, stop API implementation and report the
-   missing fingerprint or official evidence.
+4. Read the versioned Contract bound to the current Artifact Set. When project code
+   is being changed or reviewed, regenerate the AST-derived Project ThingJS Usage
+   Surface before making a compatibility claim.
+5. If the target version, Artifact Set, or required controlled evidence remains
+   unknown, stop API implementation and report the exact missing evidence.
 
 ### 2. Decompose capabilities and ownership
 
@@ -97,10 +106,12 @@ needs a new fact, conflict decision, or promotion.
 
 ### 4. Gate each API before use
 
-Allow a member only when its official 2.0 existence, exact owner and required
-signature are supported, it is not blocked for the target project, and its
-lifecycle/failure behavior is sufficient for safe use. Remove unresolved members
-from final code; do not try historical signatures as fallbacks.
+Use the versioned JSON Contract as the only machine-consumption entry. Allow a
+member only when its controlled official evidence supports the exact owner and
+required signature, its state is sufficient for the requested behavior, and it is
+not blocked for the current Artifact Set. `existence_verified` is insufficient for
+a behavior claim that requires `behavior_verified`. Remove unresolved members from
+final code; do not try historical signatures as fallbacks.
 
 ### 5. Implement and validate
 
@@ -114,9 +125,12 @@ from final code; do not try historical signatures as fallbacks.
 
 ### 6. Audit the final ThingJS surface
 
-Inventory every ThingJS constructor, method, property, enum, and event in the final
-diff. For each, retain its evidence label, retrieval channel, exact official URL,
-version scope, project status, and last verification. Record reusable runtime success
+Regenerate the Project ThingJS Usage Surface with the AST extractor. Inventory every
+resolved ThingJS constructor, method, property, enum, and event in the final diff,
+including alias/destructuring provenance and source position. Production-reachable
+`dynamic_unresolved`, `ambiguous`, or parse-failed usage blocks CI unless an exact,
+Artifact-Set-bound allowlist entry supplies narrow scope and evidence. Regex output
+is discovery only and never overrides AST results. Record reusable runtime success
 as a project Recipe and failures or reversions as Incidents.
 
 ## Route new findings
@@ -137,7 +151,16 @@ Never promote a commit, successful build, or mock-only test into an official API
 - Run `scripts/preflight.py` to fingerprint local SDK artifacts and inventory
   candidate `THING.*` tokens without validating those tokens as APIs.
 - Run `scripts/validate_registry.py <registry.json>` before accepting registry
-  changes. A non-zero result blocks promotion.
+  changes to legacy evidence input. A non-zero result blocks promotion.
+- Run `scripts/build_versioned_contract.py` to normalize controlled source records
+  and Runtime Surface evidence into an Artifact-Set-bound Contract.
+- Run `scripts/extract_usage_surface.mjs` for JavaScript, TypeScript, and Vue script
+  blocks. Regex findings remain non-authoritative fallback output.
+- Run `scripts/validate_contract.py` for isolated checks, or
+  `scripts/run_contract_ci.py` for preflight, extraction, validation, and a
+  machine-readable CI report.
+- Read [contract-pipeline.md](references/contract-pipeline.md) before changing the
+  Contract schema, Runtime Surface probe, Usage Surface resolver, allowlist, or CI.
 
 When changing this Skill, read the public repository's root `AGENTS.md`, the
 maintenance bundle, and the current process record. Run activation, routing, output,
@@ -145,7 +168,7 @@ and structural validation separately; one passing layer does not prove another.
 
 ## Report the evidence boundary
 
-State the target ThingJS version, official sources used, project evidence used,
-ThingJS APIs added or changed, runtime validation performed, and unresolved conflicts
-or unverified visual behavior. Never imply broader API or runtime coverage than the
-fresh evidence proves.
+State the target ThingJS version and Artifact Set, controlled official sources used,
+Contract state, Usage Surface result, Runtime Surface capture, independent behavior
+tests performed, and unresolved conflicts or visual behavior. Never imply broader
+API or runtime coverage than the fresh evidence proves.

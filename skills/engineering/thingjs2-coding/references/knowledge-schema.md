@@ -1,12 +1,19 @@
-# Lightweight ThingJS 2.0 API cache schema
+# Versioned ThingJS 2.0 Contract schema
 
-The registry is a selective cache, not a complete mirror of the public API. Add a
-record only when it is used, frequent, high-risk, historically hallucinated,
-conflicting, or already verified and worth preserving for future work.
+The versioned JSON Contract is the only machine-consumption entry for the Skill,
+Validator, CI, and generated TypeScript declarations. It is not the only raw fact
+source. Controlled official evidence and exact-SDK Runtime Surface evidence remain
+independent upstream inputs; Recipes and Incidents remain downstream knowledge.
+
+The Contract is selective and usage-driven. Do not turn it into a complete website
+mirror. Add APIs required by Project ThingJS Usage Surface, frequent or high-risk
+workflows, conflicts, and deliberate reusable coverage.
 
 ## Canonical identity
 
-Use `kind + fully qualified owner + member name` as the canonical key. Store overloads as signatures within one record. Keep same-name members on different owners separate. Add an alias only when an official source explicitly declares it.
+Use `kind + fully qualified owner + member name` as the canonical key. Store
+overloads inside one record. Keep same-name members on different owners separate.
+Add aliases only when controlled official evidence explicitly declares them.
 
 Recommended ID:
 
@@ -14,133 +21,160 @@ Recommended ID:
 thingjs2.api.<fully-qualified-owner>.<member>
 ```
 
-Do not infer a fully qualified owner from a display heading when the source does not establish it.
+Do not infer an owner from a display heading, engineer example, runtime instance,
+or same-name member on another class.
 
-## Registry shape
+## Root shape
 
-Store build-time canonical records in JSON so validation is deterministic. Generate human-readable Markdown only after canonicalization.
+Schema version 2 binds every record to one immutable SDK Artifact Set:
 
 ```json
 {
-  "schema_version": 1,
-  "apis": [
-    {
-      "id": "thingjs2.api.THING.App.load",
-      "kind": "method",
-      "owner": "THING.App",
-      "name": "load",
-      "version_scope": "2.x",
-      "inclusion_reason": ["used", "verified"],
-      "evidence_labels": ["official_verified"],
-      "usage_state": "allowed",
-      "retrieval_channels": ["official_web"],
-      "project_status": "not_tested",
-      "last_verified": "YYYY-MM-DD",
-      "summary": "One-sentence verified purpose.",
-      "signatures": [
-        {
-          "text": "exact verified signature",
-          "source_refs": ["official-api-page-id"]
-        }
-      ],
-      "sources": [
-        {
-          "ref": "official-api-page-id",
-          "source_id": "S1",
-          "source_type": "official_api",
-          "retrieval_channel": "official_web",
-          "url": "exact supporting URL",
-          "retrieved_at": "YYYY-MM-DD",
-          "version_evidence": "ThingJS 2.0"
-        },
-        {
-          "ref": "context7-retrieval-id",
-          "source_id": "S4",
-          "source_type": "context7_retrieval",
-          "retrieval_channel": "context7",
-          "context7_library_id": "/websites/cdn_uino_cn_thingjs_apidocs",
-          "url": "https://cdn.uino.cn/thingjs/APIdocs",
-          "original_source_url": "exact official URL returned by Context7",
-          "provenance_checked": true,
-          "retrieved_at": "YYYY-MM-DD",
-          "version_evidence": "ThingJS 2.0"
-        }
-      ],
-      "runtime_verifications": [
-        {
-          "sdk_version": "2.0.13",
-          "artifact_sha256": "sha256",
-          "status": "supported",
-          "evidence_ref": "probe or test artifact"
-        }
-      ],
-      "constraints": [],
-      "lifecycle": [],
-      "example_refs": [],
-      "recipe_refs": [],
-      "notes": []
-    }
-  ]
+  "schema_version": 2,
+  "contract_id": "thingjs-<sdk-version>-<artifact-set-prefix>",
+  "sdk_version": "2.0.13",
+  "sdk_binding": {
+    "artifact_set_id": "sha256:<digest-of-normalized-role-path-hash-list>",
+    "artifacts": [
+      {
+        "role": "core",
+        "relative_path": "path/inside/project/thing.min.js",
+        "sha256": "<artifact-sha256>"
+      },
+      {
+        "role": "campus",
+        "relative_path": "path/inside/project/thing.campus.min.js",
+        "sha256": "<artifact-sha256>"
+      }
+    ]
+  },
+  "evidence_policy": {
+    "latest_official_change": "stale_review",
+    "controlled_target_mismatch": "block",
+    "runtime_surface_scope": "existence_only"
+  },
+  "apis": []
 }
 ```
 
-The example shows structure, not a verified `App.load` signature. Do not copy placeholder text into usable knowledge.
+Paths above are placeholders. Keep real local paths and hashes only in authorized
+user/project storage.
 
-## Required fields
+## API record shape
 
-Every API record requires:
+```json
+{
+  "id": "thingjs2.api.THING.App.load",
+  "canonical_key": "method|THING.App|load",
+  "kind": "method",
+  "owner": "THING.App",
+  "name": "load",
+  "version_scope": "2.0.13",
+  "contract_state": "documented",
+  "usage_state": "conditional",
+  "summary": "One-sentence controlled purpose.",
+  "signatures": [
+    {
+      "text": "exact controlled signature",
+      "parameters": [],
+      "return_type": null,
+      "source_refs": ["official-api-page-id"]
+    }
+  ],
+  "sources": [
+    {
+      "ref": "official-api-page-id",
+      "source_type": "official_api",
+      "retrieval_channel": "official_web",
+      "url": "exact supporting URL",
+      "retrieved_at": "YYYY-MM-DD",
+      "version_relation": "exact | compatible_range | unversioned_latest",
+      "content_sha256": "required for exact/compatible_range; null for unversioned_latest"
+    }
+  ],
+  "existence_evidence": [
+    {
+      "artifact_set_id": "sha256:<artifact-set-id>",
+      "surface_ref": "runtime-surface.json",
+      "status": "present"
+    }
+  ],
+  "evidence_conflicts": [
+    {
+      "status": "mismatch",
+      "version_relation": "exact | compatible_range | unversioned_latest",
+      "evidence_ref": "controlled-comparison-record"
+    }
+  ],
+  "behavior_evidence": [
+    {
+      "artifact_set_id": "sha256:<artifact-set-id>",
+      "test_ref": "behavior-tests/<case>.json",
+      "status": "passed",
+      "scenario": "specific lifecycle or rendering behavior"
+    }
+  ],
+  "constraints": [],
+  "lifecycle": [],
+  "example_refs": [],
+  "recipe_refs": [],
+  "notes": []
+}
+```
 
-- `id`, `kind`, `owner`, `name`, and `version_scope`
-- `inclusion_reason`: one or more of `used`, `frequent`, `high_risk`,
-  `hallucination_history`, `conflict`, or `verified`
-- at least one evidence label
-- `usage_state`: `allowed`, `conditional`, or `blocked`
-- `retrieval_channels`, `project_status`, and `last_verified`
-- a concise summary
-- exact source records
-- at least one verified signature before `usage_state` becomes `allowed`
-- lifecycle or constraint records when they affect safe implementation
+The example shows structure, not a verified `App.load` signature. Never promote
+placeholder fields into executable knowledge.
 
-An `allowed` record must contain an official API or official documentation source and must not contain `runtime_conflict`.
+## Contract states
 
-Context7 is recorded as a retrieval channel. A Context7 source must retain the
-underlying `original_source_url` and the allowlisted library ID. For the approved
-ThingJS libraries, a result may satisfy `official_verified` only after the exact
-public owner/member/signature and ThingJS 2.0 scope checks pass. Source identity,
-reputation or a matching host alone cannot satisfy the label.
-Set `provenance_checked: true` only after those checks pass; the validator rejects
-Context7-backed `official_verified` records without it.
+| State | Minimum evidence | Allowed claim |
+| --- | --- | --- |
+| `documented` | Controlled official owner/signature/semantics | Documented API; target existence unknown |
+| `existence_verified` | `documented` plus matching Runtime Surface | Member exists in the exact Artifact Set |
+| `behavior_verified` | `existence_verified` plus passing behavior test | Only the tested behavior and preconditions |
+| `blocked` | Controlled mismatch, absent required member, failed behavior, or explicit project decision | No executable use for that scope |
 
-## Runtime verification states
+Runtime Surface cannot supply parameter or return types. A behavior test cannot
+repair a missing official owner/signature. An unversioned latest official change
+adds `stale_review`; only controlled evidence for the target SDK can create a
+blocking semantic mismatch.
 
-- `supported`: the identified SDK passed the probe.
-- `conflict`: the identified SDK disagreed with the official claim.
-- `not_tested`: no runtime conclusion.
-- `inconclusive`: the probe could not distinguish support from environment failure.
+## Required fields and promotion
 
-If any target-project verification is `conflict`, the project Overlay must block that API even when the canonical record remains officially valid.
+Every record requires canonical identity, version scope, Contract and usage state,
+summary, controlled source records, and signature text. A record cannot become:
 
-## Generated Markdown
+- `existence_verified` without matching `artifact_set_id` Runtime Surface evidence;
+- `behavior_verified` without a separate exact-Artifact-Set behavior record;
+- executable when `usage_state` is `blocked`;
+- a structured `.d.ts` input while parameter or return types remain unresolved.
 
-Group API records by stable class or domain. For each member include:
+Context7 is a retrieval channel, not an automatic evidence label. Retain its
+approved library ID and the original official URL. Accept a result only after exact
+public owner/member/signature and ThingJS 2.0 scope checks.
 
-- conclusion
-- exact signature
-- parameters and returns
-- behavior and constraints
-- lifecycle and cleanup
-- sources
-- referenced Examples and Recipes
-- runtime compatibility notes
+## Derived outputs
 
-Do not create one tiny file per API and do not build a single all-API Markdown file.
-Do not use cache size or coverage as a completion criterion.
+Generate human-readable Markdown and `.d.ts` only from the Contract. Generated
+declarations are disposable outputs: verify their source Contract ID/hash and never
+ingest them back into the Contract. Omit text-only or unresolved signatures rather
+than inventing types.
 
 ## Deduplication
 
 - Merge matching canonical keys.
 - Keep overloads under one entity.
-- Preserve all supporting source references.
+- Preserve all controlled source and version-relation records.
 - Never merge same-name members from different owners.
-- Deduplicate examples separately using normalized code plus goal, API set, ordering, scene context, and outcome.
-- Keep semantically different workflows as separate Recipes even when they use the same API set.
+- Keep existence and behavior evidence separate.
+- Deduplicate Examples by normalized code, goal, API set, ordering, scene context,
+  and outcome.
+- Keep semantically different Recipes separate even when they use the same API set.
+
+## Knowledge outside the Contract
+
+Engineer/project documents do not define APIs. Store reusable compositions as
+Recipes, failures and ambiguity as Incidents/Troubleshooting, and frequently asked
+operational answers as FAQ. Each may reference Contract API IDs, but none may mutate
+an owner, signature, parameter, return type, or Contract state without controlled
+evidence and the promotion workflow.

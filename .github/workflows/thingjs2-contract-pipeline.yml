@@ -1,0 +1,45 @@
+name: ThingJS 2.0 Contract Pipeline
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/thingjs2-contract-pipeline.yml"
+      - "skills/engineering/thingjs2-coding/**"
+      - "docs/thingjs2-*.md"
+  push:
+    paths:
+      - ".github/workflows/thingjs2-contract-pipeline.yml"
+      - "skills/engineering/thingjs2-coding/**"
+      - "docs/thingjs2-*.md"
+
+jobs:
+  public-contract-tools:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install parser-only test dependencies
+        run: npm install --no-save --no-package-lock @babel/parser@7 @vue/compiler-sfc@3
+      - name: Compile Python tools
+        run: >-
+          python -m py_compile
+          skills/engineering/thingjs2-coding/scripts/preflight.py
+          skills/engineering/thingjs2-coding/scripts/validate_registry.py
+          skills/engineering/thingjs2-coding/scripts/build_versioned_contract.py
+          skills/engineering/thingjs2-coding/scripts/validate_contract.py
+          skills/engineering/thingjs2-coding/scripts/run_contract_ci.py
+          skills/engineering/thingjs2-coding/scripts/test_contract_pipeline.py
+      - name: Check Node tools
+        run: |
+          node --check skills/engineering/thingjs2-coding/scripts/extract_usage_surface.mjs
+          node --check skills/engineering/thingjs2-coding/scripts/runtime_surface_probe.js
+      - name: Run synthetic Contract pipeline
+        run: >-
+          python skills/engineering/thingjs2-coding/scripts/test_contract_pipeline.py
+          --parser-root .
+          --node node

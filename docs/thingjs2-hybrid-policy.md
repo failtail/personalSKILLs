@@ -8,11 +8,14 @@ replacement for the user's private project knowledge workspace.
 
 | Source or layer | Responsibility | Can define general API truth? |
 | --- | --- | --- |
-| Official ThingJS 2.0 API, documentation, examples | Existence, signatures, public behavior, composition and ordering | Yes |
+| Controlled official ThingJS 2.0 API/documentation snapshot | Owner, signature, parameters, returns and semantics | Yes, for its controlled version relation |
 | Context7 S4/S5 | On-demand retrieval channel for the two approved first-party ThingJS corpora | Yes, only after exact source/owner/member/signature and 2.0-scope checks; retain the original source URL |
 | Engineer-maintained corpus supplied by the user | Real recipes, repeated patterns, incidents and practical constraints | No; classify before promotion |
 | Internal/project knowledge | Private environment behavior, project compatibility and verified recipes | No; may block a project API |
-| Current project runtime | SDK fingerprint and real behavior in one project | No; cannot redefine the public API |
+| Browser Runtime Surface | Descriptor-observed member existence in an exact SDK Artifact Set | Existence only |
+| Runtime Behavior Test | One lifecycle, ordering, rendering, readiness, cleanup, or failure scenario | Project behavior only |
+| Versioned JSON Contract | Normalized, deduplicated, Artifact-Set-bound machine entry | Derived from controlled evidence; not a raw source |
+| Project ThingJS Usage Surface | AST-derived project usage with provenance and resolution status | No; defines validation demand |
 
 The user-provided engineer corpus is especially valuable because it contains
 working examples. A document with a ThingJS 2.0 marker and an official example
@@ -23,24 +26,22 @@ silently becoming a universal API claim.
 ## Retrieval workflow
 
 ```text
-Project profile / Overlay
+SDK Artifact Set
         ↓
-Local Verified Recipe (candidate only)
+Browser Runtime Surface (existence only)
         ↓
-Context7, only when runtime = active
+Controlled official evidence ──→ Versioned JSON Contract
         ↓
-Official web fallback when Context7 is unavailable or incomplete
+Project source ──→ AST Usage Surface ──→ Contract Validator / CI
         ↓
-Internal/project knowledge for private constraints and conflicts
+Skill / generated .d.ts / project code
         ↓
-Code generation
-        ↓
-API evidence audit
-        ↓
-Lifecycle, async, event and cleanup audit
-        ↓
-Runtime validation and knowledge feedback
+Runtime Behavior Tests and Recipe/Incident feedback
 ```
+
+The Contract is the only machine-consumption entry for the Skill, Validator, CI,
+and generated `.d.ts`; it is not the only original fact source. TypeScript
+declarations are one-way generated output and never define Contract truth.
 
 Context7 runtime states are `active`, `partial`, `waiting`, `unavailable`, and
 `rejected`. The approved libraries are `/websites/thingjs_new` mapped to
@@ -90,24 +91,41 @@ same corpus also documents compatibility-style `app.create`; the active policy
 must not recommend that path when a native `new THING.ClassName(...)` 2.0 path
 is available.
 
-## Lightweight local knowledge
+## Versioned Contract and lightweight local knowledge
 
 The private workspace may contain:
 
 ```text
 knowledge/
 ├── verified/       # public-safe facts or project behavior with evidence
-├── api-cache/      # used, frequent, high-risk, conflicting or hallucination-prone APIs
+├── api/            # controlled upstream API evidence and snapshots
 ├── internal/       # private material; never copied to this repository
 ├── recipes/        # project compositions and preconditions
 └── troubleshooting/ # failures, fixes and residual risks
+contracts/
+└── <sdk-version>/
+    └── contract.json # only machine-consumption API entry
+project-overlays/
+└── <project-id>/
+    ├── project-profile.json
+    ├── runtime-surface.json
+    ├── usage-surface.json
+    ├── dynamic-usage-allowlist.json
+    └── behavior-tests/
 ```
 
-The API cache is not a complete encyclopedia. Every cache record should retain
-the reason for inclusion, retrieval channel, original source URL, version scope,
-project status and last verification. Context7 source identity alone cannot earn
-an `official_verified` label; the individual result must pass the provenance
-gate described above.
+The Contract is selective and usage-driven, not a complete encyclopedia. Every
+record retains the reason for inclusion, retrieval channel, original source URL,
+version relation, Artifact Set binding, state, and last verification. Context7
+source identity alone cannot earn a controlled official label.
+
+Project ThingJS Usage Surface is produced primarily through AST analysis. JavaScript,
+TypeScript, and Vue `<script>`/`<script setup>` use one Usage Entity model. The
+extractor resolves aliases, destructuring, constructor instances, and statically
+evaluable computed properties where possible. Production-reachable
+`dynamic_unresolved`, `ambiguous`, and parse-failed usage blocks unless a narrow,
+evidence-backed allowlist binds the exact Artifact Set. Regex is discovery fallback
+only and never creates or replaces verified AST entities.
 
 Private-source deferral is allowed. If an internal page cannot be read in the
 current session, continue the public-only track with official web evidence and
@@ -116,8 +134,8 @@ make internal extraction a prerequisite for public Skill validation.
 
 ## Evaluation boundary
 
-Evaluate four layers independently: metadata activation, progressive reference
-routing, five output-behavior smoke tests, and target-engine runtime. A structural
+Evaluate activation, progressive reference routing, five output-behavior smoke
+tests, the Contract pipeline, Runtime Surface, and Runtime Behavior independently. A structural
 validation pass cannot prove activation, a correct activation cannot prove minimal
 reference loading, and a public-example smoke cannot prove target-project runtime.
 Preserve before/after prompt results when changing the description, and require a
@@ -133,6 +151,12 @@ The former full-site inventory, complete public API mirror, large benchmark
 matrix and heavy RAG pipeline are historical V1 design ideas. Preserve their
 lessons in the process record, but do not make them completion gates for this
 Skill.
+
+For target compatibility, a mismatch between the Contract and controlled evidence
+for that SDK version blocks. A change seen only on an unversioned latest official
+page produces `stale_review`. A newly exposed Runtime Surface member is a candidate
+or warning until official identity/signature evidence is controlled; it does not
+silently expand the Contract.
 
 ## Security boundary
 

@@ -29,7 +29,8 @@ until a conditional gate is met.
 | Verify a specific API or example before use | `knowledge-retrieval.md`, `source-policy.md` | `context7-official-sources.md` -> Context7 is callable and its runtime state must be evaluated; `project-overlay.md` -> deciding usability for a target SDK |
 | Convert engineer material into reusable knowledge | `practice-workflows.md`, `evidence-model.md` | `knowledge-schema.md` -> writing a structured record; `source-policy.md` -> promoting an API fact candidate |
 | Promote or change registry evidence | `evidence-model.md`, `knowledge-schema.md`, `source-policy.md` | `project-overlay.md` -> changing project support status |
-| Maintain or evaluate this Skill | `evaluation.md`, `hybrid-policy.md` | `domain: null` by default; other references -> only the changed route or assertion depends on them |
+| Build or validate a versioned Contract | `contract-pipeline.md`, `evidence-model.md`, `knowledge-schema.md`, `project-overlay.md` | `source-policy.md` -> controlled official evidence changes; `evaluation.md` -> release-gate behavior changes |
+| Maintain or evaluate this Skill | `evaluation.md`, `hybrid-policy.md` | `domain: null` by default; `contract-pipeline.md` -> Contract, Runtime/Usage Surface, allowlist, or CI changes; other references -> only the changed route or assertion depends on them |
 
 ## Select the smallest domain bundle
 
@@ -40,7 +41,7 @@ until a conditional gate is met.
 | Event binding/unbinding | `practice-workflows.md` | Event Recipe/Incident -> tag, condition, repeated listener, or owner cleanup matters |
 | Camera or animation | `gotchas.md` | Camera Recipe -> target readiness/order matters; timing conflict -> `duration/onComplete` versus `time/complete` appears |
 | Scene replacement or loading cancellation | `practice-workflows.md`, `gotchas.md` | Scene-replacement Recipe/Incident -> generation token, rollback, late result, or cleanup must be implemented |
-| Query, campus, Earth, style, or rendering | `knowledge-retrieval.md` | Matching domain candidate -> only after exact owner, signature, version, and source checks |
+| Query, campus, Earth, style, or rendering | `knowledge-retrieval.md` | `contract-pipeline.md` -> claiming support in a target Artifact Set; matching domain candidate -> only after exact owner, signature, version, and source checks |
 | Hallucination, private member, compatibility, or wrong-owner review | `gotchas.md` | Incident record -> only for the exact matching failure pattern |
 
 ## Stop and escalation conditions
