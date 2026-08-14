@@ -320,3 +320,12 @@ public repository. The real-project non-zero gate remains an expected compatibil
 block, and the target Contract still has no behavior-verified records. Therefore the
 Skill remains in progress even though activation coverage and deterministic tooling
 pass.
+
+The private engineer-corpus promotion index now separates evidence authority from
+semantic routing. Every immutable source is byte/hash checked before a schema-2
+ledger is written; each ledger row has a candidate, Incident, review, or explicit
+rejection decision, reason codes, a next evidence gate, and a materialization plan.
+Only the phase-one and curated review slices become dossiers; the remaining records
+stay ledger-only rather than producing hundreds of context-heavy files. This routing
+does not create official API facts, and unresolved review decisions keep domain
+knowledge completion open.
