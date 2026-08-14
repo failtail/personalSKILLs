@@ -190,6 +190,8 @@ Before claiming the Skill change is validated:
 7. run the user-level replay checker, when present, against the exact fixtures and
    result record; its complete mode must fail while any required case is `NOT_RUN`;
    it must also fail for partial output quality or target-project runtime behavior.
+   Bind output quality to the hash of an independent evaluator's raw artifact;
+   a self-reported forward artifact cannot satisfy the quality gate by itself.
 8. inspect the complete diff, public/private boundary, generated reports, and
    installed-copy equality before release.
 
