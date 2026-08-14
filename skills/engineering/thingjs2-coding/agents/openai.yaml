@@ -1,4 +1,4 @@
 interface:
   display_name: "ThingJS 2.0 Coding"
   short_description: "基于官方证据实现与审查 ThingJS 2.0 代码"
-  default_prompt: "Use $thingjs2-coding to verify, implement, or convert this ThingJS 2.0 task with the smallest sufficient evidence set."
+  default_prompt: "Use $thingjs2-coding to verify, implement, review, convert, or evaluate this ThingJS 2.0 task with the smallest sufficient evidence set."
