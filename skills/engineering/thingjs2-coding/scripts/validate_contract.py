@@ -578,6 +578,16 @@ def validate_usage(
     allowed_dynamic = active_allowlist_entries(allowlist, artifact_set_id)
     reachable_files = set(usage.get("reachable_files", []))
 
+    incremental = usage.get("incremental")
+    if isinstance(incremental, dict) and incremental.get("complete_surface") is False:
+        add_issue(
+            errors,
+            "incremental_surface_incomplete",
+            "usage.incremental",
+            "An incremental Usage delta is review metadata only and cannot be used as a complete Contract release surface.",
+            changed_files=incremental.get("changed_files", []),
+        )
+
     for gap_index, gap in enumerate(usage.get("reachability_gaps", [])):
         target = errors if gap.get("production_reachable") is True else warnings
         add_issue(

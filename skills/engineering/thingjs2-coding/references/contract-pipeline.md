@@ -105,7 +105,18 @@ Generate Usage Surface with `extract_usage_surface.mjs`.
 - Exclude dependency, build, coverage, VCS, agent, and generated reference-worktree
   directories from the source inventory; these are evidence/tooling inputs, not
   application source.
-- Do not claim complete cross-module value flow or runtime call-graph analysis.
+- The bounded cross-module pass may propagate statically imported/exported named,
+  default, and namespace bindings, including explicit re-exports and `export *`.
+  It runs a fixed number of passes and reports `resolver.module_flow_converged`;
+  an un-converged graph adds a production reachability gap instead of silently
+  resolving an alias.
+- Factory/callback returns, dynamic constructor class maps, and static `await
+  import()` member paths remain `ambiguous` unless a future evidence-backed
+  resolver explicitly proves the value flow. Do not claim runtime call-graph
+  analysis or general interprocedural dataflow.
+- `--changed-files <json>` computes a reverse-dependency review delta, but the
+  output has `incremental.complete_surface=false`. It is not a hash/cache-level
+  incremental build and cannot replace a complete Usage Surface in Contract CI.
 - Keep lexical flow conservative: conflicting local aliases become `ambiguous`,
   and imported values do not inherit a ThingJS owner without local provenance.
 
@@ -168,6 +179,8 @@ Block when:
 - production code uses an API missing from, or blocked by, the Contract;
 - production unresolved usage lacks an exact allowlist;
 - the production entry/import graph has an unresolved local or dynamic edge;
+- the Usage Surface is an incremental delta (`usage.incremental.complete_surface=false`)
+  or module propagation did not converge;
 - a release-required Runtime Behavior Test has not passed.
 
 Warn, but do not block solely because:

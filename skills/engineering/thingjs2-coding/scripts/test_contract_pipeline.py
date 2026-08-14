@@ -169,6 +169,10 @@ def run_usage_extractor(node: str, parser_root: str, temp_root: Path) -> dict:
                 "import './View.vue'",
                 "import '@/helper'",
                 "import '@custom/helper'",
+                "import { ImportedEntity, ImportedEntityClass, ReExportedApp } from './consumer-exports.js'",
+                "import * as ThingExports from './cross-module.js'",
+                "import { ConflictingClass } from './conflicting-exports.js'",
+                "import { makeEntity, makeArrowEntity } from './cross-module.js'",
                 "import './missing-local.js'",
                 "const T = THING",
                 "const { Entity } = T",
@@ -182,6 +186,15 @@ def run_usage_extractor(node: str, parser_root: str, temp_root: Path) -> dict:
                 "app.on('click', null, () => {}, 'fixture')",
                 "entity.destroy()",
                 "destroyEntity()",
+                "ImportedEntity.destroy()",
+                "new ImportedEntityClass()",
+                "new ReExportedApp()",
+                "ThingExports.exportedEntity.destroy()",
+                "new ConflictingClass()",
+                "makeEntity().destroy()",
+                "makeArrowEntity().destroy()",
+                "const DynamicThingExports = await import('./cross-module.js')",
+                "new DynamicThingExports.EntityClass()",
                 "new THING[window.runtimeClass]()",
             ]
         )
@@ -194,6 +207,40 @@ def run_usage_extractor(node: str, parser_root: str, temp_root: Path) -> dict:
     )
     (temp_root / "src" / "helper.ts").write_text(
         "export const helperEntity = new THING.Entity()\n",
+        encoding="utf-8",
+    )
+    (temp_root / "src" / "cross-module.js").write_text(
+        "\n".join(
+            [
+                "export const exportedEntity = new THING.Entity()",
+                "export const EntityClass = THING.Entity",
+                "export function makeEntity() { return new THING.Entity() }",
+                "export const makeArrowEntity = () => new THING.Entity()",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (temp_root / "src" / "consumer-exports.js").write_text(
+        "export { exportedEntity as ImportedEntity, EntityClass as ImportedEntityClass } from './cross-module.js'\n"
+        "export { makeArrowEntity } from './cross-module.js'\n"
+        "export { default as ReExportedApp } from './default-app.js'\n",
+        encoding="utf-8",
+    )
+    (temp_root / "src" / "default-app.js").write_text(
+        "const AppClass = THING.App\nexport default AppClass\n",
+        encoding="utf-8",
+    )
+    (temp_root / "src" / "conflicting-exports.js").write_text(
+        "export * from './conflict-entity.js'\nexport * from './conflict-app.js'\n",
+        encoding="utf-8",
+    )
+    (temp_root / "src" / "conflict-entity.js").write_text(
+        "export const ConflictingClass = THING.Entity\n",
+        encoding="utf-8",
+    )
+    (temp_root / "src" / "conflict-app.js").write_text(
+        "export const ConflictingClass = THING.App\n",
         encoding="utf-8",
     )
     (temp_root / "src" / "custom").mkdir()
@@ -219,7 +266,7 @@ def run_usage_extractor(node: str, parser_root: str, temp_root: Path) -> dict:
     )
     output = temp_root / "usage.json"
     extractor = Path(__file__).resolve().parent / "extract_usage_surface.mjs"
-    subprocess.run(
+    completed = subprocess.run(
         [
             node,
             str(extractor),
@@ -237,6 +284,79 @@ def run_usage_extractor(node: str, parser_root: str, temp_root: Path) -> dict:
             "src/main.js",
             "--entry",
             "src/broken.js",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    full_usage = json.loads(output.read_text(encoding="utf-8"))
+
+    changed_files = temp_root / "changed-files.json"
+    changed_files.write_text(json.dumps(["src/cross-module.js"]), encoding="utf-8")
+    incremental_output = temp_root / "usage-incremental.json"
+    subprocess.run(
+        [
+            node,
+            str(extractor),
+            "--project-root",
+            str(temp_root),
+            "--parser-root",
+            parser_root,
+            "--output",
+            str(incremental_output),
+            "--contract",
+            str(contract_path),
+            "--alias-config",
+            str(alias_config),
+            "--changed-files",
+            str(changed_files),
+            "--entry",
+            "src/main.js",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return full_usage, json.loads(incremental_output.read_text(encoding="utf-8"))
+
+
+def run_unconverged_module_flow(node: str, parser_root: str, temp_root: Path) -> dict:
+    """构造超过固定传播轮次的 re-export 链，确认解析器以 gap 阻断而非静默漏报。"""
+
+    chain_root = temp_root / "long-chain"
+    (chain_root / "src").mkdir(parents=True)
+    (chain_root / "index.html").write_text(
+        '<script type="module" src="/src/main.js"></script>\n',
+        encoding="utf-8",
+    )
+    (chain_root / "src" / "main.js").write_text(
+        "import { EntityClass } from './a00.js'\nnew EntityClass()\n",
+        encoding="utf-8",
+    )
+    for index in range(10):
+        next_name = f"a{index + 1:02d}.js"
+        (chain_root / "src" / f"a{index:02d}.js").write_text(
+            f"export {{ EntityClass }} from './{next_name}'\n",
+            encoding="utf-8",
+        )
+    (chain_root / "src" / "a10.js").write_text(
+        "export const EntityClass = THING.Entity\n",
+        encoding="utf-8",
+    )
+    output = chain_root / "usage.json"
+    extractor = Path(__file__).resolve().parent / "extract_usage_surface.mjs"
+    subprocess.run(
+        [
+            node,
+            str(extractor),
+            "--project-root",
+            str(chain_root),
+            "--parser-root",
+            parser_root,
+            "--output",
+            str(output),
+            "--entry",
+            "src/main.js",
         ],
         check=True,
         capture_output=True,
@@ -279,7 +399,8 @@ def main() -> int:
     args = parse_args()
     with tempfile.TemporaryDirectory(prefix="thingjs-contract-test-") as directory:
         temp_root = Path(directory)
-        usage = run_usage_extractor(args.node, args.parser_root, temp_root)
+        usage, incremental_usage = run_usage_extractor(args.node, args.parser_root, temp_root)
+        unconverged_usage = run_unconverged_module_flow(args.node, args.parser_root, temp_root)
         safe_surface = run_runtime_probe_safety(args.node, temp_root)
 
     assert safe_surface["runtime_version"] is None
@@ -292,7 +413,9 @@ def main() -> int:
     assert "method|THING.App|on" in keys
     assert "method|THING.Entity|destroy" in keys
     dynamic = [entity for entity in entities if entity["resolution_status"] == "dynamic_unresolved"]
+    ambiguous = [entity for entity in entities if entity["resolution_status"] == "ambiguous"]
     assert len(dynamic) == 1 and dynamic[0]["production_reachable"] is True
+    assert any("new ConflictingClass()" in entity["expression"] for entity in ambiguous)
     assert any("destructure:Entity->Entity" in entity["alias_provenance"] for entity in entities)
     assert any(
         entity["canonical_key"] == "method|THING.Entity|destroy"
@@ -306,6 +429,61 @@ def main() -> int:
     )
     assert usage["resolver"]["contract_return_types"] == "structured reference/Promise<reference> only"
     assert usage["resolver"]["alias_config"] == "explicit JSON profile"
+    assert sum(
+        entity["canonical_key"] == "method|THING.Entity|destroy"
+        and any(item.startswith("import:") or item.startswith("import-namespace:") for item in entity["alias_provenance"])
+        for entity in entities
+    ) >= 2
+    assert any(
+        entity["canonical_key"] == "constructor|THING.Entity|constructor"
+        and "new ImportedEntityClass()" in entity["expression"]
+        for entity in entities
+    )
+    assert any(
+        entity["canonical_key"] == "constructor|THING.App|constructor"
+        and "new ReExportedApp()" in entity["expression"]
+        for entity in entities
+    )
+    assert usage["incremental"]["complete_surface"] is True
+    assert incremental_usage["incremental"]["enabled"] is True
+    assert incremental_usage["incremental"]["complete_surface"] is False
+    assert incremental_usage["incremental"]["changed_files"] == ["src/cross-module.js"]
+    assert "src/main.js" in incremental_usage["incremental"]["analyzed_files"]
+    assert "src/consumer-exports.js" in incremental_usage["incremental"]["analyzed_files"]
+    assert {
+        entity["source"]["path"] for entity in incremental_usage["usage_entities"]
+    } <= set(incremental_usage["incremental"]["analyzed_files"])
+    assert any(
+        entity["source"]["path"] == "src/main.js"
+        for entity in incremental_usage["usage_entities"]
+    )
+    assert any(
+        entity["resolution_status"] == "ambiguous"
+        and "new ConflictingClass()" in entity["expression"]
+        for entity in entities
+    )
+    assert any(
+        entity["resolution_status"] == "ambiguous"
+        and "makeEntity().destroy()" in entity["expression"]
+        for entity in entities
+    )
+    assert any(
+        entity["resolution_status"] == "ambiguous"
+        and "makeArrowEntity().destroy()" in entity["expression"]
+        for entity in entities
+    )
+    assert any(
+        entity["resolution_status"] == "ambiguous"
+        and "DynamicThingExports.EntityClass" in entity["expression"]
+        for entity in entities
+    )
+    assert usage["resolver"]["module_flow_converged"] is True
+    assert unconverged_usage["resolver"]["module_flow_converged"] is False
+    assert any(
+        gap["reason"] == "cross_module_resolution_incomplete"
+        and gap["production_reachable"] is True
+        for gap in unconverged_usage["reachability_gaps"]
+    )
     assert any(
         entity["source"]["path"] == "src/helper.ts" and entity["production_reachable"] is True
         for entity in entities
@@ -335,6 +513,8 @@ def main() -> int:
     assert any(error["code"] == "production_reachability_gap" for error in report["errors"])
     assert any(warning["code"] == "stale_review" for warning in report["warnings"])
     assert not any(error["code"] == "usage_not_in_contract" and error.get("canonical_key") == "method|THING.Entity|destroy" for error in report["errors"])
+    incremental_report = validate_all(contract, surface, incremental_usage, None)
+    assert any(error["code"] == "incremental_surface_incomplete" for error in incremental_report["errors"])
 
     allowlist = {
         "entries": [
@@ -345,7 +525,18 @@ def main() -> int:
                 "dynamic_pattern": dynamic[0]["expression"],
                 "reason": "Synthetic test exception.",
                 "evidence_refs": ["fixture-evidence"],
-            }
+            },
+            *[
+                {
+                    "status": "active",
+                    "artifact_set_id": FIXTURE_ARTIFACT_SET_ID,
+                    "usage_ids": [entity["id"]],
+                    "dynamic_pattern": entity["expression"],
+                    "reason": "Synthetic ambiguous export exception.",
+                    "evidence_refs": ["fixture-evidence"],
+                }
+                for entity in ambiguous
+            ],
         ]
     }
     allowlisted_report = validate_all(contract, surface, usage, allowlist)
@@ -447,6 +638,15 @@ def main() -> int:
                     "contract_return_type_nested_owner",
                     "structured_method_return_nested_owner",
                     "explicit_alias_config_reachability",
+                    "bounded_cross_module_named_default_namespace",
+                    "bounded_reexport_chain",
+                    "conflicting_reexport_ambiguous",
+                    "factory_return_value_ambiguous",
+                    "dynamic_import_value_flow_ambiguous",
+                    "module_flow_convergence_reported",
+                    "module_flow_nonconvergence_blocks",
+                    "incremental_reverse_dependency_delta",
+                    "incremental_delta_rejected_by_contract_gate",
                     "vue_script_setup",
                     "root_alias_reachability",
                     "unresolved_production_import_block",

@@ -44,6 +44,7 @@ function parseArgs(argv) {
     else if (arg === '--parser-root') values.parserRoot = argv[++index]
     else if (arg === '--contract') values.contract = argv[++index]
     else if (arg === '--alias-config') values.aliasConfig = argv[++index]
+    else if (arg === '--changed-files') values.changedFiles = argv[++index]
     else if (arg === '--help') values.help = true
     else throw new Error(`Unknown argument: ${arg}`)
   }
@@ -56,6 +57,7 @@ function printHelp() {
       'Usage: node extract_usage_surface.mjs --project-root <path> --output <json>',
       '       [--entry <relative-file>] [--parser-root <node-project>]',
       '       [--contract <versioned-contract.json>] [--alias-config <tsconfig/vite alias JSON>]',
+      '       [--changed-files <json-file>]',
       '',
       'The parser root must expose @babel/parser and, for .vue files, @vue/compiler-sfc.',
     ].join('\n') + '\n',
@@ -204,6 +206,45 @@ function propertyName(node, constants) {
 
 function sameBinding(left, right) {
   return JSON.stringify(left) === JSON.stringify(right)
+}
+
+// 跨模块传播只比较可解析含义；provenance 差异不会把同一 ThingJS 引用误判为冲突。
+function sameReferenceMeaning(left, right) {
+  const stripProvenance = (value) => {
+    if (!value || typeof value !== 'object') return value
+    if (Array.isArray(value)) return value.map(stripProvenance)
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([key]) => key !== 'provenance')
+        .map(([key, item]) => [key, stripProvenance(item)]),
+    )
+  }
+  return sameBinding(stripProvenance(left), stripProvenance(right))
+}
+
+function cloneReference(reference) {
+  if (!reference || typeof reference !== 'object') return reference
+  return JSON.parse(JSON.stringify(reference))
+}
+
+function mergeReference(existing, incoming) {
+  if (!existing) return cloneReference(incoming)
+  if (sameReferenceMeaning(existing, incoming)) {
+    return {
+      ...cloneReference(existing),
+      provenance: [...new Set([...(existing.provenance || []), ...(incoming?.provenance || [])])],
+    }
+  }
+  return {
+    type: 'ambiguous',
+    provenance: [...new Set([...(existing.provenance || []), ...(incoming?.provenance || [])])],
+  }
+}
+
+function referenceMapToObject(referenceMap) {
+  return Object.fromEntries(
+    [...referenceMap.entries()].map(([name, reference]) => [name, cloneReference(reference)]),
+  )
 }
 
 function resolvedReferenceOwner(typeDescriptor) {
@@ -400,11 +441,25 @@ function resolveReference(node, bindings, constants, contractIndex) {
   if (base.type === 'instance_member') {
     return resolveInstanceMember(base, property, contractIndex)
   }
+  if (base.type === 'module_namespace') {
+    const exported = base.exports?.[property]
+    if (!exported) return null
+    return {
+      ...cloneReference(exported),
+      provenance: [
+        ...(base.provenance || []),
+        `module-namespace:${property}`,
+        ...(exported.provenance || []),
+      ],
+    }
+  }
   return base.type === 'dynamic' ? base : null
 }
 
-function collectBindings(ast, constants, contractIndex) {
-  const bindings = new Map()
+function collectBindings(ast, constants, contractIndex, initialBindings = new Map()) {
+  const bindings = new Map(
+    [...initialBindings.entries()].map(([name, reference]) => [name, cloneReference(reference)]),
+  )
   const declarations = []
   const assignments = []
   walk(ast, (node) => {
@@ -459,6 +514,193 @@ function collectBindings(ast, constants, contractIndex) {
     if (!changed) break
   }
   return bindings
+}
+
+function collectTopLevelBindings(ast, constants, contractIndex, initialBindings) {
+  const body = []
+  for (const statement of ast.program.body) {
+    if (statement.type === 'VariableDeclaration') body.push(statement)
+    if (
+      statement.type === 'ExportNamedDeclaration' &&
+      statement.declaration?.type === 'VariableDeclaration'
+    ) body.push(statement.declaration)
+  }
+  return collectBindings({ type: 'Program', body }, constants, contractIndex, initialBindings)
+}
+
+function exportedName(node) {
+  if (!node) return null
+  if (node.type === 'Identifier') return node.name
+  if (node.type === 'StringLiteral' || node.type === 'Literal') return node.value
+  return null
+}
+
+function collectExportBindings(ast, bindings, constants, contractIndex, importedExports) {
+  const exports = new Map()
+  const add = (name, reference) => {
+    if (typeof name !== 'string' || !reference) return
+    exports.set(name, mergeReference(exports.get(name), reference))
+  }
+  const unresolvedFunction = (name, provenance) => ({
+    type: 'unresolved_cross_module_function',
+    crossModuleFunction: true,
+    provenance: [provenance || `export-function:${name}`],
+  })
+
+  for (const statement of ast.program.body) {
+    if (statement.type === 'ExportNamedDeclaration') {
+      if (statement.declaration?.type === 'VariableDeclaration') {
+        for (const declaration of statement.declaration.declarations) {
+          if (declaration.id.type !== 'Identifier') continue
+          const reference = declaration.init?.type === 'FunctionExpression'
+            || declaration.init?.type === 'ArrowFunctionExpression'
+            ? unresolvedFunction(declaration.id.name)
+            : bindings.get(declaration.id.name)
+          add(declaration.id.name, reference)
+        }
+      }
+      if (statement.declaration?.type === 'FunctionDeclaration' && statement.declaration.id?.name) {
+        add(statement.declaration.id.name, unresolvedFunction(statement.declaration.id.name))
+      }
+      for (const specifier of statement.specifiers || []) {
+        const localName = exportedName(specifier.local)
+        const name = exportedName(specifier.exported)
+        const reference = statement.source
+          ? importedExports.get(exportedName(specifier.local))
+          : bindings.get(localName)
+        if (reference) add(name, reference)
+      }
+    }
+    if (statement.type === 'ExportDefaultDeclaration') {
+      const declaration = statement.declaration
+      const reference = declaration?.type === 'FunctionDeclaration'
+        || declaration?.type === 'FunctionExpression'
+        || declaration?.type === 'ArrowFunctionExpression'
+        ? unresolvedFunction('default', 'export-function:default')
+        : declaration?.type === 'Identifier'
+        ? bindings.get(declaration.name)
+        : resolveReference(declaration, bindings, constants, contractIndex)
+      if (reference) add('default', reference)
+    }
+  }
+  return exports
+}
+
+function collectImportedBindings(ast, projectRoot, filename, sourceSet, aliasEntries, moduleExports) {
+  const bindings = new Map()
+  const importSources = []
+  const add = (name, reference) => {
+    if (!name || !reference) return
+    bindings.set(name, mergeReference(bindings.get(name), reference))
+  }
+
+  for (const statement of ast.program.body) {
+    if (statement.type !== 'ImportDeclaration' || typeof statement.source?.value !== 'string') continue
+    const specifier = statement.source.value
+    importSources.push(specifier)
+    const target = resolveImport(projectRoot, filename, specifier, sourceSet, aliasEntries)
+    const targetExports = target ? moduleExports.get(path.normalize(target)) : null
+    if (!targetExports) continue
+    for (const item of statement.specifiers || []) {
+      if (item.type === 'ImportSpecifier') {
+        const imported = exportedName(item.imported)
+        const reference = targetExports.get(imported)
+        if (reference) {
+          add(item.local.name, {
+            ...cloneReference(reference),
+            provenance: [...(reference.provenance || []), `import:${specifier}:${imported}`],
+          })
+        }
+      } else if (item.type === 'ImportDefaultSpecifier') {
+        const reference = targetExports.get('default')
+        if (reference) {
+          add(item.local.name, {
+            ...cloneReference(reference),
+            provenance: [...(reference.provenance || []), `import:${specifier}:default`],
+          })
+        }
+      } else if (item.type === 'ImportNamespaceSpecifier') {
+        add(item.local.name, {
+          type: 'module_namespace',
+          exports: referenceMapToObject(targetExports),
+          provenance: [`import-namespace:${specifier}`],
+        })
+      }
+    }
+  }
+
+  walk(ast, (node) => {
+    if (node.type !== 'VariableDeclarator' || node.id.type !== 'Identifier') return
+    const expression = node.init?.type === 'AwaitExpression' ? node.init.argument : node.init
+    if (
+      expression?.type !== 'CallExpression' ||
+      expression.callee?.type !== 'Import' ||
+      expression.arguments.length !== 1
+    ) return
+    const specifier = expression.arguments[0]?.value
+    if (typeof specifier !== 'string') return
+    const target = resolveImport(projectRoot, filename, specifier, sourceSet, aliasEntries)
+    const targetExports = target ? moduleExports.get(path.normalize(target)) : null
+    if (!targetExports || targetExports.size === 0) return
+    add(node.id.name, {
+      type: 'ambiguous',
+      provenance: [`dynamic-import-value-flow:${specifier}`],
+    })
+  })
+  return { bindings, importSources }
+}
+
+// `export *` 或显式 re-export 的同名冲突必须合并为 ambiguous，不能按遍历顺序放行。
+function collectReExportBindings(ast, projectRoot, filename, sourceSet, aliasEntries, moduleExports) {
+  const bindings = new Map()
+  const add = (name, reference) => {
+    if (!name || !reference) return
+    bindings.set(name, mergeReference(bindings.get(name), reference))
+  }
+
+  for (const statement of ast.program.body) {
+    if (!statement.source || typeof statement.source.value !== 'string') continue
+    const target = resolveImport(projectRoot, filename, statement.source.value, sourceSet, aliasEntries)
+    const targetExports = target ? moduleExports.get(path.normalize(target)) : null
+    if (!targetExports) continue
+    if (statement.type === 'ExportAllDeclaration') {
+      for (const [name, reference] of targetExports.entries()) {
+        if (name !== 'default') add(name, reference)
+      }
+      continue
+    }
+    if (statement.type !== 'ExportNamedDeclaration') continue
+    for (const specifier of statement.specifiers || []) {
+      const imported = exportedName(specifier.local)
+      const exported = exportedName(specifier.exported)
+      const reference = targetExports.get(imported)
+      if (reference) add(exported, reference)
+    }
+  }
+  return bindings
+}
+
+function collectModuleReferences(ast, projectRoot, filename, sourceSet, aliasEntries, moduleExports) {
+  const bindings = collectImportedBindings(ast, projectRoot, filename, sourceSet, aliasEntries, moduleExports).bindings
+  for (const [name, reference] of collectReExportBindings(ast, projectRoot, filename, sourceSet, aliasEntries, moduleExports)) {
+    bindings.set(name, mergeReference(bindings.get(name), reference))
+  }
+  return bindings
+}
+
+function loadChangedFiles(changedFilesPath, projectRoot, sourceSet) {
+  if (!changedFilesPath) return null
+  const payload = JSON.parse(fs.readFileSync(path.resolve(changedFilesPath), 'utf8'))
+  const values = Array.isArray(payload) ? payload : payload?.files
+  if (!Array.isArray(values)) throw new Error('--changed-files JSON must be an array or an object with a files array.')
+  const changed = new Set()
+  for (const value of values) {
+    if (typeof value !== 'string') throw new Error('--changed-files entries must be strings.')
+    const resolved = path.normalize(path.isAbsolute(value) ? value : path.resolve(projectRoot, value))
+    if (!sourceSet.has(resolved)) throw new Error(`--changed-files entry is not a source file: ${value}`)
+    changed.add(resolved)
+  }
+  return changed
 }
 
 function collectConstants(ast) {
@@ -559,6 +801,17 @@ function canonicalShape(reference, accessType) {
   return null
 }
 
+function unresolvedCallReference(node, bindings, constants) {
+  if (node?.type !== 'CallExpression' && node?.type !== 'OptionalCallExpression') return null
+  if (node.callee?.type !== 'Identifier') return null
+  const binding = bindings.get(node.callee.name)
+  if (!binding?.crossModuleFunction) return null
+  return {
+    type: 'ambiguous',
+    provenance: [...(binding.provenance || []), `cross-module-call:${node.callee.name}`],
+  }
+}
+
 function entityKind(accessType) {
   if (accessType === 'construct') return 'constructor'
   if (accessType === 'call') return 'method'
@@ -609,13 +862,9 @@ function isNestedMemberObject(node, parent) {
   )
 }
 
-function analyzeSegment(filename, relativePath, segment, contractIndex) {
-  const constants = collectConstants(segment.ast)
-  const bindings = collectBindings(segment.ast, constants, contractIndex)
-  const entities = []
+function collectSegmentImports(relativePath, segment, constants) {
   const imports = []
   const unresolvedImports = []
-
   const recordDynamicImportGap = (node, reason) => {
     const location = node.loc?.start || { line: 1, column: 0 }
     unresolvedImports.push({
@@ -638,30 +887,34 @@ function analyzeSegment(filename, relativePath, segment, contractIndex) {
     ) {
       if (typeof node.source?.value === 'string') imports.push(node.source.value)
     }
-    if (
-      node.type === 'CallExpression' &&
-      node.callee?.type === 'Import' &&
-      node.arguments.length === 1
-    ) {
+    if (node.type === 'CallExpression' && node.callee?.type === 'Import' && node.arguments.length === 1) {
       const value = evaluateStaticString(node.arguments[0], constants)
       if (value !== null) imports.push(value)
       else recordDynamicImportGap(node, 'dynamic_import_specifier')
     }
-    if (
-      node.type === 'CallExpression' &&
-      node.callee?.type === 'Identifier' &&
-      node.callee.name === 'require' &&
-      node.arguments.length === 1
-    ) {
+    if (node.type === 'CallExpression' && node.callee?.type === 'Identifier' && node.callee.name === 'require' && node.arguments.length === 1) {
       const value = evaluateStaticString(node.arguments[0], constants)
       if (value !== null) imports.push(value)
       else recordDynamicImportGap(node, 'dynamic_require_specifier')
     }
+  })
+  return { imports, unresolvedImports }
+}
 
+function analyzeSegment(filename, relativePath, segment, contractIndex, initialBindings = new Map()) {
+  const constants = collectConstants(segment.ast)
+  const bindings = collectBindings(segment.ast, constants, contractIndex, initialBindings)
+  const entities = []
+  const { imports, unresolvedImports } = collectSegmentImports(relativePath, segment, constants)
+
+  walk(segment.ast, (node, parent) => {
     const isMember = node.type === 'MemberExpression' || node.type === 'OptionalMemberExpression'
     if (isMember) {
       if (isNestedMemberObject(node, parent)) return
-      const reference = resolveReference(node, bindings, constants, contractIndex)
+      let reference = resolveReference(node, bindings, constants, contractIndex)
+      if (!reference && (node.object.type === 'CallExpression' || node.object.type === 'OptionalCallExpression')) {
+        reference = unresolvedCallReference(node.object, bindings, constants)
+      }
       const entity = buildUsageEntity({
         filename,
         relativePath,
@@ -678,7 +931,7 @@ function analyzeSegment(filename, relativePath, segment, contractIndex) {
     // `new AppAlias()` 没有 MemberExpression，需要从别名绑定补出构造使用。
     if (node.type === 'NewExpression' && node.callee.type === 'Identifier') {
       const reference = resolveReference(node.callee, bindings, constants, contractIndex)
-      if (reference?.type !== 'namespace') return
+      if (!reference || !['namespace', 'ambiguous', 'dynamic'].includes(reference.type)) return
       const syntheticParent = { type: 'NewExpression', callee: node.callee, arguments: node.arguments }
       syntheticParent.start = node.start
       syntheticParent.end = node.end
@@ -758,6 +1011,25 @@ function computeReachable(entries, importGraph) {
   return reachable
 }
 
+function computeIncrementalFiles(changedFiles, importGraph) {
+  if (!changedFiles) return null
+  const reverseGraph = new Map([...importGraph.keys()].map((file) => [file, []]))
+  for (const [importer, dependencies] of importGraph.entries()) {
+    for (const dependency of dependencies) reverseGraph.get(dependency)?.push(importer)
+  }
+  const affected = new Set()
+  const queue = [...changedFiles]
+  while (queue.length > 0) {
+    const current = queue.shift()
+    if (affected.has(current)) continue
+    affected.add(current)
+    for (const importer of reverseGraph.get(current) || []) {
+      if (!affected.has(importer)) queue.push(importer)
+    }
+  }
+  return affected
+}
+
 function regexDiscoveries(relativePath, source, reason) {
   return [...source.matchAll(THING_TOKEN_PATTERN)].map((match) => ({
     token: match[0],
@@ -793,10 +1065,13 @@ function main() {
 
   const files = collectSourceFiles(projectRoot)
   const sourceSet = new Set(files.map(path.normalize))
+  const changedFiles = loadChangedFiles(args.changedFiles, projectRoot, sourceSet)
   const requestedEntries = args.entries.length > 0
     ? args.entries.map((entry) => path.resolve(projectRoot, entry))
     : defaultEntries(projectRoot)
   const importGraph = new Map(files.map((file) => [path.normalize(file), []]))
+  const moduleRecords = new Map()
+  const moduleExports = new Map()
   const usageEntities = []
   const parseFailures = []
   const discoveryFindings = []
@@ -818,13 +1093,9 @@ function main() {
       continue
     }
 
-    const coveredTokens = new Set()
+    moduleRecords.set(path.normalize(filename), { filename, relativePath, source, segments })
     for (const segment of segments) {
-      const analysis = analyzeSegment(filename, relativePath, segment, contractIndex)
-      usageEntities.push(...analysis.entities)
-      for (const entity of analysis.entities) {
-        for (const token of entity.expression.match(THING_TOKEN_PATTERN) || []) coveredTokens.add(token)
-      }
+      const analysis = collectSegmentImports(relativePath, segment, collectConstants(segment.ast))
       for (const specifier of analysis.imports) {
         const resolved = resolveImport(projectRoot, filename, specifier, sourceSet, aliasEntries)
         if (resolved) importGraph.get(path.normalize(filename)).push(path.normalize(resolved))
@@ -838,9 +1109,89 @@ function main() {
       }
       reachabilityGaps.push(...analysis.unresolvedImports)
     }
+  }
 
-    for (const finding of regexDiscoveries(relativePath, source, 'unmodeled_pattern')) {
-      if (!coveredTokens.has(finding.token)) discoveryFindings.push(finding)
+  for (const record of moduleRecords.values()) moduleExports.set(path.normalize(record.filename), new Map())
+
+  // 固定轮次覆盖常见 re-export 链；超过边界的循环不会被当作已证明的 ThingJS alias。
+  let moduleFlowConverged = false
+  for (let pass = 0; pass < 8; pass += 1) {
+    let changed = false
+    for (const record of moduleRecords.values()) {
+      const nextExports = new Map(moduleExports.get(path.normalize(record.filename)) || [])
+      for (const segment of record.segments) {
+        const imported = collectImportedBindings(
+          segment.ast,
+          projectRoot,
+          record.filename,
+          sourceSet,
+          aliasEntries,
+          moduleExports,
+        )
+        const constants = collectConstants(segment.ast)
+        const bindings = collectTopLevelBindings(segment.ast, constants, contractIndex, imported.bindings)
+        const direct = collectExportBindings(segment.ast, bindings, constants, contractIndex, imported.bindings)
+        const reExports = collectReExportBindings(
+          segment.ast,
+          projectRoot,
+          record.filename,
+          sourceSet,
+          aliasEntries,
+          moduleExports,
+        )
+        const stageExports = new Map()
+        for (const [name, reference] of [...direct, ...reExports]) {
+          stageExports.set(name, mergeReference(stageExports.get(name), reference))
+        }
+        for (const [name, reference] of stageExports) {
+          const merged = mergeReference(nextExports.get(name), reference)
+          if (!sameBinding(nextExports.get(name), merged)) {
+            nextExports.set(name, merged)
+            changed = true
+          }
+        }
+      }
+      if (!sameBinding(
+        referenceMapToObject(moduleExports.get(path.normalize(record.filename))),
+        referenceMapToObject(nextExports),
+      )) changed = true
+      moduleExports.set(path.normalize(record.filename), nextExports)
+    }
+    if (!changed) {
+      moduleFlowConverged = true
+      break
+    }
+  }
+
+  const incrementalFiles = computeIncrementalFiles(changedFiles, importGraph)
+  const coveredByFile = new Map()
+  for (const record of moduleRecords.values()) {
+    if (incrementalFiles && !incrementalFiles.has(path.normalize(record.filename))) continue
+    for (const segment of record.segments) {
+      const moduleReferences = collectModuleReferences(
+        segment.ast,
+        projectRoot,
+        record.filename,
+        sourceSet,
+        aliasEntries,
+        moduleExports,
+      )
+      const analysis = analyzeSegment(
+        record.filename,
+        record.relativePath,
+        segment,
+        contractIndex,
+        moduleReferences,
+      )
+      usageEntities.push(...analysis.entities)
+      const coveredTokens = coveredByFile.get(record.filename) || new Set()
+      for (const entity of analysis.entities) {
+        for (const token of entity.expression.match(THING_TOKEN_PATTERN) || []) coveredTokens.add(token)
+      }
+      coveredByFile.set(record.filename, coveredTokens)
+    }
+    for (const finding of regexDiscoveries(record.relativePath, record.source, 'unmodeled_pattern')) {
+      if (!(coveredByFile.get(record.filename) || new Set()).has(finding.token)) discoveryFindings.push(finding)
     }
   }
 
@@ -852,6 +1203,14 @@ function main() {
   for (const gap of reachabilityGaps) {
     const absolute = path.normalize(path.resolve(projectRoot, gap.source.path))
     gap.production_reachable = reachable.has(absolute)
+  }
+  if (!moduleFlowConverged) {
+    reachabilityGaps.push({
+      specifier: null,
+      reason: 'cross_module_resolution_incomplete',
+      source: { path: null, block: null },
+      production_reachable: true,
+    })
   }
   if (requestedEntries.length === 0) {
     reachabilityGaps.push({
@@ -872,11 +1231,21 @@ function main() {
     generated_at: new Date().toISOString(),
     project_root: projectRoot,
     entries: requestedEntries.map((entry) => toPosix(path.relative(projectRoot, entry))),
+    incremental: {
+      enabled: Boolean(changedFiles),
+      changed_files: changedFiles ? [...changedFiles].map((file) => toPosix(path.relative(projectRoot, file))).sort() : [],
+      analyzed_files: incrementalFiles ? [...incrementalFiles].map((file) => toPosix(path.relative(projectRoot, file))).sort() : [],
+      complete_surface: !changedFiles,
+      restriction: changedFiles
+        ? 'Delta output is review metadata only; run a full extraction before Contract CI.'
+        : null,
+    },
     resolver: {
       primary: 'ast',
       javascript_typescript: '@babel/parser',
       vue_sfc: '@vue/compiler-sfc -> @babel/parser',
-      symbol_mode: 'file-scope alias/destructuring and constructor-instance resolution',
+      symbol_mode: 'bounded cross-module alias/re-export and constructor-instance resolution',
+      module_flow_converged: moduleFlowConverged,
       contract_return_types: args.contract ? 'structured reference/Promise<reference> only' : 'disabled',
       alias_config: args.aliasConfig ? 'explicit JSON profile' : 'built-in @/ and ~/',
       production_reachability: 'static module import graph',
@@ -899,11 +1268,12 @@ function main() {
       regex_discoveries: discoveryFindings.length,
     },
     limitations: [
-      'Cross-module value flow and runtime call graphs are not inferred.',
+      'Cross-module propagation is limited to statically imported/exported namespace or instance references and bounded re-export chains.',
       'Lexical path sensitivity is conservative; conflicting aliases across scopes become ambiguous.',
-      'Imported values are not treated as ThingJS aliases without local provenance.',
+      'Factory functions, callback returns, dynamic imports and unresolved cycles are not treated as ThingJS aliases.',
       'Static reachability supports relative, root, @/, and ~/ imports; unresolved production imports block validation.',
       'Nested instance paths require schema-3 structured Contract return-type information; unknown or legacy returns remain unresolved.',
+      'Incremental output is a changed-file delta and cannot replace a complete Usage Surface in Contract CI.',
       'Regex findings are never verified Usage Entities.',
     ],
   }
