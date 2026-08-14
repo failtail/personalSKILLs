@@ -114,6 +114,10 @@ Generate Usage Surface with `extract_usage_surface.mjs`.
   import()` member paths remain `ambiguous` unless a future evidence-backed
   resolver explicitly proves the value flow. Do not claim runtime call-graph
   analysis or general interprocedural dataflow.
+- An exported function is retained as a factory candidate only when a static
+  `return` expression already resolves to a ThingJS reference or an explicitly
+  ambiguous ThingJS path. Ordinary cross-module utility returns are ignored;
+  parameter forwarding and callback returns remain outside the resolver.
 - `--changed-files <json>` computes a reverse-dependency review delta, but the
   output has `incremental.complete_surface=false`. It is not a hash/cache-level
   incremental build and cannot replace a complete Usage Surface in Contract CI.

@@ -44,6 +44,13 @@ returned at a call site. Static `await import()` member use is also retained as
 ambiguous. Dynamic constructor class maps remain unresolved. These cases are
 intentional evidence boundaries, not parser errors.
 
+普通跨模块工具函数不会仅因返回值成员访问而变成 Usage Entity。解析器只在导出函数的
+静态 `return` 已能解析为 `THING` namespace、实例、实例成员、动态 ThingJS 路径或既有
+ambiguous ThingJS 引用时，才把调用结果保留为 `ambiguous`。这会保留真实 ThingJS
+factory 的审查门，同时避免数组、配置和业务对象的 `.map()`、`.length`、`.right` 等访问
+污染 ThingJS Usage Surface。参数透传、回调返回和无法静态证明的分支仍不解析为
+`resolved`。
+
 ## Review-only delta mode
 
 `--changed-files <json>` validates the changed-file list, computes the reverse
@@ -92,3 +99,11 @@ The target ThingJS 2.0.13 project must be re-extracted after this slice. Its
 existing release gate remains authoritative: improved resolution may reduce
 ambiguity, but it cannot waive missing Contract entries, production unresolved
 usage, Artifact Set mismatch, or missing behavior evidence.
+
+## C01 结果
+
+本轮将跨模块函数候选收窄到静态 `return` 可解析为 ThingJS 引用的函数。合成回归覆盖
+函数声明、函数表达式、箭头函数、默认导出、re-export 和普通数组工具函数；真实项目
+Usage 从 314 entities/103 ambiguous 恢复为 291 entities/80 ambiguous，resolved 保持
+209，dynamic 保持 2，parse failure 保持 0。Contract CI 恢复为 233 errors/14 warnings，
+`.d.ts` drift 通过。未知参数透传、回调返回和动态返回仍未升级为 `resolved`。

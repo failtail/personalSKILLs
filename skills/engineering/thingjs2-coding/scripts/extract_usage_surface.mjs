@@ -535,6 +535,22 @@ function exportedName(node) {
   return null
 }
 
+// 只追踪静态 return 已能回溯到 ThingJS 的导出函数，避免普通业务工具函数制造伪 Usage Entity。
+function functionMayReturnThingReference(node, bindings, constants, contractIndex) {
+  const returns = []
+  if (node.body?.type === 'BlockStatement') {
+    walk(node.body, (candidate) => {
+      if (candidate.type === 'ReturnStatement' && candidate.argument) returns.push(candidate.argument)
+    })
+  } else if (node.body) {
+    returns.push(node.body)
+  }
+  return returns.some((value) => {
+    const reference = resolveReference(value, bindings, constants, contractIndex)
+    return ['namespace', 'instance', 'instance_member', 'dynamic', 'ambiguous'].includes(reference?.type)
+  })
+}
+
 function collectExportBindings(ast, bindings, constants, contractIndex, importedExports) {
   const exports = new Map()
   const add = (name, reference) => {
@@ -552,14 +568,19 @@ function collectExportBindings(ast, bindings, constants, contractIndex, imported
       if (statement.declaration?.type === 'VariableDeclaration') {
         for (const declaration of statement.declaration.declarations) {
           if (declaration.id.type !== 'Identifier') continue
-          const reference = declaration.init?.type === 'FunctionExpression'
-            || declaration.init?.type === 'ArrowFunctionExpression'
+          const reference = (declaration.init?.type === 'FunctionExpression'
+            || declaration.init?.type === 'ArrowFunctionExpression')
+            && functionMayReturnThingReference(declaration.init, bindings, constants, contractIndex)
             ? unresolvedFunction(declaration.id.name)
             : bindings.get(declaration.id.name)
           add(declaration.id.name, reference)
         }
       }
-      if (statement.declaration?.type === 'FunctionDeclaration' && statement.declaration.id?.name) {
+      if (
+        statement.declaration?.type === 'FunctionDeclaration'
+        && statement.declaration.id?.name
+        && functionMayReturnThingReference(statement.declaration, bindings, constants, contractIndex)
+      ) {
         add(statement.declaration.id.name, unresolvedFunction(statement.declaration.id.name))
       }
       for (const specifier of statement.specifiers || []) {
@@ -573,9 +594,10 @@ function collectExportBindings(ast, bindings, constants, contractIndex, imported
     }
     if (statement.type === 'ExportDefaultDeclaration') {
       const declaration = statement.declaration
-      const reference = declaration?.type === 'FunctionDeclaration'
+      const reference = (declaration?.type === 'FunctionDeclaration'
         || declaration?.type === 'FunctionExpression'
-        || declaration?.type === 'ArrowFunctionExpression'
+        || declaration?.type === 'ArrowFunctionExpression')
+        && functionMayReturnThingReference(declaration, bindings, constants, contractIndex)
         ? unresolvedFunction('default', 'export-function:default')
         : declaration?.type === 'Identifier'
         ? bindings.get(declaration.name)

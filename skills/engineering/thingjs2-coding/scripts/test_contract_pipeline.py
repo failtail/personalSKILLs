@@ -173,6 +173,8 @@ def run_usage_extractor(node: str, parser_root: str, temp_root: Path) -> dict:
                 "import * as ThingExports from './cross-module.js'",
                 "import { ConflictingClass } from './conflicting-exports.js'",
                 "import { makeEntity, makeArrowEntity } from './cross-module.js'",
+                "import makeDefaultEntity from './default-factory.js'",
+                "import { plainArrayHelper } from './plain-helper.js'",
                 "import './missing-local.js'",
                 "const T = THING",
                 "const { Entity } = T",
@@ -193,6 +195,8 @@ def run_usage_extractor(node: str, parser_root: str, temp_root: Path) -> dict:
                 "new ConflictingClass()",
                 "makeEntity().destroy()",
                 "makeArrowEntity().destroy()",
+                "makeDefaultEntity().destroy()",
+                "plainArrayHelper().map((item) => item.id)",
                 "const DynamicThingExports = await import('./cross-module.js')",
                 "new DynamicThingExports.EntityClass()",
                 "new THING[window.runtimeClass]()",
@@ -229,6 +233,14 @@ def run_usage_extractor(node: str, parser_root: str, temp_root: Path) -> dict:
     )
     (temp_root / "src" / "default-app.js").write_text(
         "const AppClass = THING.App\nexport default AppClass\n",
+        encoding="utf-8",
+    )
+    (temp_root / "src" / "default-factory.js").write_text(
+        "export default () => new THING.Entity()\n",
+        encoding="utf-8",
+    )
+    (temp_root / "src" / "plain-helper.js").write_text(
+        "export function plainArrayHelper() { return [] }\n",
         encoding="utf-8",
     )
     (temp_root / "src" / "conflicting-exports.js").write_text(
@@ -470,6 +482,15 @@ def main() -> int:
     assert any(
         entity["resolution_status"] == "ambiguous"
         and "makeArrowEntity().destroy()" in entity["expression"]
+        for entity in entities
+    )
+    assert any(
+        entity["resolution_status"] == "ambiguous"
+        and "makeDefaultEntity().destroy()" in entity["expression"]
+        for entity in entities
+    )
+    assert not any(
+        "plainArrayHelper().map" in entity["expression"]
         for entity in entities
     )
     assert any(
