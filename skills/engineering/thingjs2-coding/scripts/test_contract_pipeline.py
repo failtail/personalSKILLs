@@ -11,6 +11,7 @@ import tempfile
 from pathlib import Path
 
 from build_versioned_contract import normalize_record
+from run_contract_ci import build_developer_report, render_developer_report
 from validate_contract import validate_all
 
 
@@ -601,6 +602,26 @@ def main() -> int:
     assert any(error["code"] == "production_parse_failure" for error in report["errors"])
     assert any(error["code"] == "production_reachability_gap" for error in report["errors"])
     assert any(warning["code"] == "stale_review" for warning in report["warnings"])
+    developer_report = build_developer_report(report, usage)
+    assert developer_report["summary"]["errors"] == len(report["errors"])
+    assert any(item["key"] == "dynamic_usage_blocked" for item in developer_report["fix_order"])
+    assert any(item["key"] == "usage_not_in_contract" for item in developer_report["fix_order"])
+    assert any(item["key"] == "src/main.js" for item in developer_report["by_file"])
+    assert "ThingJS Contract CI developer report" in render_developer_report(developer_report)
+    projected_report = build_developer_report(
+        {
+            "valid": False,
+            "errors": [
+                {"code": "blocked_api_usage", "path": "usage_entities[0]"},
+                {"code": "production_parse_failure", "source": "src/broken.js"},
+            ],
+            "warnings": [],
+        },
+        usage,
+    )
+    assert any(item["key"] == entities[0]["canonical_key"] for item in projected_report["by_canonical_api"])
+    assert any(item["key"] == entities[0]["source"]["path"] for item in projected_report["by_file"])
+    assert any(item["key"] == "src/broken.js" for item in projected_report["by_file"])
     assert not any(error["code"] == "usage_not_in_contract" and error.get("canonical_key") == "method|THING.Entity|destroy" for error in report["errors"])
     incremental_report = validate_all(contract, surface, incremental_usage, None)
     assert any(error["code"] == "incremental_surface_incomplete" for error in incremental_report["errors"])
@@ -753,6 +774,7 @@ def main() -> int:
                     "controlled_mismatch_blocks_latest_only_reviews",
                     "runtime_probe_does_not_invoke_getters",
                     "runtime_member_kind_must_match",
+                    "developer_report_grouping",
                 ],
             },
             ensure_ascii=False,

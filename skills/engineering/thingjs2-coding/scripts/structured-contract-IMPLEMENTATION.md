@@ -8,6 +8,8 @@
 | `generate` | 从已验证的结构化 Contract 生成声明文本和审计报告。 |
 | `generate_contract_dts.py --check` | 比较确定性声明输出并阻断手工 drift。 |
 | `build_contract` | 从受控 Registry/Artifact/Runtime 输入生成 schema 3 Contract。 |
+| `build_developer_report` | 将 Validator 问题投影为错误类别、canonical API 和文件分组。 |
+| `render_developer_report` | 按修复优先级输出紧凑 Markdown 报告。 |
 
 ## Requirement Mapping
 
@@ -22,6 +24,7 @@
 2. `build_versioned_contract.py` 为新构建结果写入 schema 3 标识；旧 schema 2 仍可被 Validator 读取。
 3. `generate_contract_dts.py` 规范化 Contract 后计算源 hash，按 `THING` owner 生成 namespace/class 声明，并输出 omission report。
 4. CI 在 Contract/Usage 验证后可选执行 byte-level drift check；声明文件永远不回写 Contract。
+5. CI 将原始 Validator issue 与 Usage entity 按 `usage_id` 或 `usage_entities[n]` 路径关联，生成 `developer-report.json/.md`；报告只用于排序修复，不修改允许列表、Contract 或退出码。
 
 ## Key Decisions
 
@@ -35,6 +38,7 @@
 - `python scripts/test_structured_contract.py`
 - `python scripts/test_contract_pipeline.py --parser-root <parser-root> --node <node>`
 - `python scripts/test_usage_promotion_queue.py`
+- Developer report synthetic grouping：错误类别、array-path Usage 回溯、字符串 source path、canonical API 与文件聚合。
 - 真实项目 schema 3 migration：0 validator errors、10 stale warnings、0 declarations、10 explicit omissions。
 - 真实项目 CI：declaration drift step passed；项目自身仍以有依据的 `EXPECTED_BLOCK` 返回。
 

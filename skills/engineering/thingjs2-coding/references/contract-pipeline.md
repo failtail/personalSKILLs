@@ -174,7 +174,12 @@ The command:
 2. regenerates the AST Usage Surface;
 3. compares current artifacts, Runtime Surface, Contract and project usage;
 4. writes machine-readable reports;
-5. returns non-zero on a blocking inconsistency.
+5. writes JSON and Markdown developer reports grouped by issue category,
+   canonical API, source file, and repair order;
+6. returns non-zero on a blocking inconsistency.
+
+The developer report is a projection of validator and Usage evidence. It never
+adds an allowlist entry, mutates the Contract, or changes the CI exit code.
 
 `--usage-cache` is an optional content-hash/module cache for the AST extractor.
 It may reuse unchanged modules and their cached exports, but CI still validates
