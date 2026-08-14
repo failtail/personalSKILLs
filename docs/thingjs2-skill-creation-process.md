@@ -329,3 +329,10 @@ Only the phase-one and curated review slices become dossiers; the remaining reco
 stay ledger-only rather than producing hundreds of context-heavy files. This routing
 does not create official API facts, and unresolved review decisions keep domain
 knowledge completion open.
+
+The semantic ledger also records a final direct-promotion decision. Ordinary
+candidates remain subject to their evidence gate, troubleshooting material stays
+Incident-only, and risky or unresolved sources are rejected from direct executable
+2.0/official-Contract promotion while remaining available for audit or a separately
+reviewed derivative. This distinction closes corpus routing without deleting useful
+failure history or claiming that candidates are verified.
