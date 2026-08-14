@@ -105,7 +105,7 @@ The current slice does not implement:
 
 - cache reuse for an unchanged complete surface is implemented; changed-build cache reuse is
   limited to the affected-module/reverse-dependency slice described above;
-- native Vite/TypeScript config execution or every alias plugin convention;
+- executing native Vite/TypeScript source configuration or supporting every alias plugin convention;
 - general interprocedural call-graph analysis;
 - dynamic constructor-to-class maps;
 - runtime behavior or lifecycle verification.
@@ -138,3 +138,14 @@ usage, Artifact Set mismatch, or missing behavior evidence.
 Usage 从 314 entities/103 ambiguous 恢复为 291 entities/80 ambiguous，resolved 保持
 209，dynamic 保持 2，parse failure 保持 0。Contract CI 恢复为 233 errors/14 warnings，
 `.d.ts` drift 通过。未知参数透传、回调返回和动态返回仍未升级为 `resolved`。
+
+## C07 alias 配置审计
+
+Resolver 已通过 `--alias-config` 静态读取 `compilerOptions.paths/baseUrl`、`resolve.alias`
+或 `aliases` JSON，并将配置内容纳入缓存指纹；`run_contract_ci.py` 会透传该 profile。
+合成回归中的 `@custom/*` 证明非内置 alias 可进入生产可达图。目标项目当前只有不含 alias
+的 `vite.config.js`，没有 tsconfig/jsconfig alias，因此不存在待修复的生产 import gap。
+
+本阶段不自动 import/执行 Vite 或 TypeScript 配置源码。需要函数、plugin 或运行时计算的
+alias 必须先导出为显式 JSON；无法静态表达时继续形成 unresolved reachability gap。这个
+边界满足读取项目 alias 的需求，同时避免配置代码在证据工具进程中执行。
