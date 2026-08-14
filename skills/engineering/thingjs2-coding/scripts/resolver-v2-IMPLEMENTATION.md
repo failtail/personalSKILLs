@@ -74,6 +74,17 @@ Therefore the output marks:
 Contract release. This distinction preserves correctness while leaving room
 for a future hash/cache implementation.
 
+## C02a 内容缓存
+
+`--cache <resolver-cache.json>` 为完整 Usage Surface 保存源码内容 hash、Contract/alias/入口
+配置指纹和上一次完整结果。内容与配置均未变化时，extractor 直接复用完整结果并报告
+`cache.hit=true`；配置变化、文件新增/删除/修改或显式 `--changed-files` 会使缓存失效，
+并回到完整提取。带显式 delta 的结果不会写入完整缓存，避免 review metadata 污染发布缓存。
+
+这一切片已经是真实的 hash/config cache，但变化文件仍会触发完整提取；受影响模块及其
+反向依赖的局部缓存复用留给 C02b。输出会报告 `invalidated_files` 和 `reused_files`，
+不把缓存命中误报成目标项目兼容或行为验证。
+
 ## Deliberate non-goals
 
 The current slice does not implement:
@@ -94,6 +105,9 @@ Contract nested owners, named/default/namespace imports, explicit and star
 re-exports, conflicting exports, factory returns, static dynamic imports,
 non-converged propagation, reverse-dependency delta output, and rejection of an
 incomplete delta by Contract validation.
+
+缓存回归还验证了首次写入、内容/配置指纹命中、完整 summary 复用和 delta 不写入完整
+缓存；缓存命中不会改变 Usage Entity 数量或解析状态。
 
 The target ThingJS 2.0.13 project must be re-extracted after this slice. Its
 existing release gate remains authoritative: improved resolution may reduce

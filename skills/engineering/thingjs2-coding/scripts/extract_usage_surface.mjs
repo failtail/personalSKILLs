@@ -45,6 +45,7 @@ function parseArgs(argv) {
     else if (arg === '--contract') values.contract = argv[++index]
     else if (arg === '--alias-config') values.aliasConfig = argv[++index]
     else if (arg === '--changed-files') values.changedFiles = argv[++index]
+    else if (arg === '--cache') values.cache = argv[++index]
     else if (arg === '--help') values.help = true
     else throw new Error(`Unknown argument: ${arg}`)
   }
@@ -58,6 +59,7 @@ function printHelp() {
       '       [--entry <relative-file>] [--parser-root <node-project>]',
       '       [--contract <versioned-contract.json>] [--alias-config <tsconfig/vite alias JSON>]',
       '       [--changed-files <json-file>]',
+      '       [--cache <resolver-cache.json>]',
       '',
       'The parser root must expose @babel/parser and, for .vue files, @vue/compiler-sfc.',
     ].join('\n') + '\n',
@@ -725,6 +727,51 @@ function loadChangedFiles(changedFilesPath, projectRoot, sourceSet) {
   return changed
 }
 
+function resolverConfigurationSignature(args, projectRoot, requestedEntries) {
+  const readSignatureInput = (filename) => {
+    if (!filename) return null
+    const resolved = path.resolve(filename)
+    return fs.existsSync(resolved) ? sha256Text(fs.readFileSync(resolved, 'utf8')) : `missing:${resolved}`
+  }
+  return sha256Text(JSON.stringify({
+    resolver: 'thingjs-usage-resolver-v2-cache-1',
+    project_root: projectRoot,
+    contract: readSignatureInput(args.contract),
+    alias_config: readSignatureInput(args.aliasConfig),
+    entries: requestedEntries.map((entry) => toPosix(path.relative(projectRoot, entry))).sort(),
+  }))
+}
+
+function readResolverCache(cachePath, projectRoot, configurationSignature) {
+  if (!cachePath) return { state: 'disabled', cache: null, reason: null }
+  if (!fs.existsSync(cachePath)) return { state: 'miss', cache: null, reason: 'cache_missing' }
+  try {
+    const cache = JSON.parse(fs.readFileSync(cachePath, 'utf8'))
+    if (
+      cache.schema_version !== 1
+      || cache.project_root !== projectRoot
+      || cache.configuration_signature !== configurationSignature
+      || !cache.files
+      || !cache.surface
+    ) return { state: 'miss', cache: null, reason: 'cache_identity_mismatch' }
+    return { state: 'valid', cache, reason: null }
+  } catch (error) {
+    return { state: 'miss', cache: null, reason: 'cache_parse_failed' }
+  }
+}
+
+function writeResolverCache(cachePath, projectRoot, configurationSignature, fileHashes, surface) {
+  if (!cachePath || surface.incremental?.complete_surface !== true) return
+  fs.mkdirSync(path.dirname(cachePath), { recursive: true })
+  fs.writeFileSync(cachePath, JSON.stringify({
+    schema_version: 1,
+    project_root: projectRoot,
+    configuration_signature: configurationSignature,
+    files: fileHashes,
+    surface,
+  }, null, 2) + '\n', 'utf8')
+}
+
 function collectConstants(ast) {
   const constants = new Map()
   const declarations = []
@@ -1091,6 +1138,42 @@ function main() {
   const requestedEntries = args.entries.length > 0
     ? args.entries.map((entry) => path.resolve(projectRoot, entry))
     : defaultEntries(projectRoot)
+  const fileHashes = Object.fromEntries(files.map((file) => [
+    toPosix(path.relative(projectRoot, file)),
+    sha256Text(fs.readFileSync(file, 'utf8')),
+  ]))
+  const configurationSignature = resolverConfigurationSignature(args, projectRoot, requestedEntries)
+  const cachePath = args.cache ? path.resolve(args.cache) : null
+  const cacheResult = readResolverCache(cachePath, projectRoot, configurationSignature)
+  const cacheInvalidatedFiles = new Set()
+  if (cacheResult.cache) {
+    for (const relativePath of Object.keys(fileHashes)) {
+      if (cacheResult.cache.files[relativePath] !== fileHashes[relativePath]) {
+        cacheInvalidatedFiles.add(relativePath)
+      }
+    }
+    for (const relativePath of Object.keys(cacheResult.cache.files)) {
+      if (!Object.prototype.hasOwnProperty.call(fileHashes, relativePath)) cacheInvalidatedFiles.add(relativePath)
+    }
+  } else if (cachePath) {
+    for (const relativePath of Object.keys(fileHashes)) cacheInvalidatedFiles.add(relativePath)
+  }
+  if (cacheResult.state === 'valid' && !changedFiles && cacheInvalidatedFiles.size === 0) {
+    const cachedSurface = JSON.parse(JSON.stringify(cacheResult.cache.surface))
+    cachedSurface.generated_at = new Date().toISOString()
+    cachedSurface.cache = {
+      enabled: true,
+      hit: true,
+      invalidated_files: [],
+      reused_files: Object.keys(fileHashes).sort(),
+      reason: 'content_and_configuration_match',
+    }
+    const cachedOutput = path.resolve(args.output)
+    fs.mkdirSync(path.dirname(cachedOutput), { recursive: true })
+    fs.writeFileSync(cachedOutput, JSON.stringify(cachedSurface, null, 2) + '\n', 'utf8')
+    process.stdout.write(JSON.stringify(cachedSurface.summary, null, 2) + '\n')
+    return 0
+  }
   const importGraph = new Map(files.map((file) => [path.normalize(file), []]))
   const moduleRecords = new Map()
   const moduleExports = new Map()
@@ -1298,11 +1381,21 @@ function main() {
       'Incremental output is a changed-file delta and cannot replace a complete Usage Surface in Contract CI.',
       'Regex findings are never verified Usage Entities.',
     ],
+    cache: {
+      enabled: Boolean(cachePath),
+      hit: false,
+      invalidated_files: [...cacheInvalidatedFiles].sort(),
+      reused_files: [],
+      reason: cachePath
+        ? (changedFiles ? 'explicit_changed_files' : cacheResult.reason || 'content_changed')
+        : null,
+    },
   }
 
   const output = path.resolve(args.output)
   fs.mkdirSync(path.dirname(output), { recursive: true })
-  fs.writeFileSync(output, `${JSON.stringify(payload, null, 2)}\n`, 'utf8')
+  fs.writeFileSync(output, JSON.stringify(payload, null, 2) + '\n', 'utf8')
+  writeResolverCache(cachePath, projectRoot, configurationSignature, fileHashes, payload)
   process.stdout.write(`${JSON.stringify(payload.summary, null, 2)}\n`)
   return 0
 }

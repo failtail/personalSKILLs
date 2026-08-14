@@ -329,7 +329,35 @@ def run_usage_extractor(node: str, parser_root: str, temp_root: Path) -> dict:
         capture_output=True,
         text=True,
     )
-    return full_usage, json.loads(incremental_output.read_text(encoding="utf-8"))
+    cache_path = temp_root / "resolver-cache.json"
+    cached_first_output = temp_root / "usage-cache-first.json"
+    cached_command = [
+        node,
+        str(extractor),
+        "--project-root",
+        str(temp_root),
+        "--parser-root",
+        parser_root,
+        "--output",
+        str(cached_first_output),
+        "--contract",
+        str(contract_path),
+        "--alias-config",
+        str(alias_config),
+        "--entry",
+        "src/main.js",
+        "--entry",
+        "src/broken.js",
+        "--cache",
+        str(cache_path),
+    ]
+    subprocess.run(cached_command, check=True, capture_output=True, text=True)
+    cached_second_output = temp_root / "usage-cache-second.json"
+    cached_second_command = [*cached_command]
+    cached_second_command[cached_second_command.index("--output") + 1] = str(cached_second_output)
+    subprocess.run(cached_second_command, check=True, capture_output=True, text=True)
+    cached_usage = json.loads(cached_second_output.read_text(encoding="utf-8"))
+    return full_usage, json.loads(incremental_output.read_text(encoding="utf-8")), cached_usage
 
 
 def run_unconverged_module_flow(node: str, parser_root: str, temp_root: Path) -> dict:
@@ -411,7 +439,7 @@ def main() -> int:
     args = parse_args()
     with tempfile.TemporaryDirectory(prefix="thingjs-contract-test-") as directory:
         temp_root = Path(directory)
-        usage, incremental_usage = run_usage_extractor(args.node, args.parser_root, temp_root)
+        usage, incremental_usage, cached_usage = run_usage_extractor(args.node, args.parser_root, temp_root)
         unconverged_usage = run_unconverged_module_flow(args.node, args.parser_root, temp_root)
         safe_surface = run_runtime_probe_safety(args.node, temp_root)
 
@@ -457,6 +485,10 @@ def main() -> int:
         for entity in entities
     )
     assert usage["incremental"]["complete_surface"] is True
+    assert cached_usage["cache"]["hit"] is True
+    assert len(cached_usage["cache"]["reused_files"]) == usage["summary"]["source_files"]
+    assert cached_usage["usage_entities"] == usage["usage_entities"]
+    assert cached_usage["summary"] == usage["summary"]
     assert incremental_usage["incremental"]["enabled"] is True
     assert incremental_usage["incremental"]["complete_surface"] is False
     assert incremental_usage["incremental"]["changed_files"] == ["src/cross-module.js"]
