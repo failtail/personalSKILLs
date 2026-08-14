@@ -23,6 +23,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--allowlist")
     parser.add_argument("--alias-config", help="Optional JSON export of TypeScript/Vite path aliases.")
     parser.add_argument(
+        "--usage-cache",
+        help="Optional Usage resolver content-hash cache; complete surfaces only are cached.",
+    )
+    parser.add_argument(
         "--dts-output",
         help="Optional generated .d.ts path; when provided, --check detects declaration drift.",
     )
@@ -87,6 +91,8 @@ def main() -> int:
         usage_command.extend(["--entry", entry])
     if args.alias_config:
         usage_command.extend(["--alias-config", args.alias_config])
+    if args.usage_cache:
+        usage_command.extend(["--cache", args.usage_cache])
     usage_code = run(usage_command, output_dir / "usage.stdout.json")
     steps.append({"name": "usage_surface", "exit_code": usage_code})
     if usage_code != 0:

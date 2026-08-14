@@ -760,7 +760,7 @@ function readResolverCache(cachePath, projectRoot, configurationSignature) {
   }
 }
 
-function writeResolverCache(cachePath, projectRoot, configurationSignature, fileHashes, surface) {
+function writeResolverCache(cachePath, projectRoot, configurationSignature, fileHashes, surface, modules) {
   if (!cachePath || surface.incremental?.complete_surface !== true) return
   fs.mkdirSync(path.dirname(cachePath), { recursive: true })
   fs.writeFileSync(cachePath, JSON.stringify({
@@ -768,6 +768,7 @@ function writeResolverCache(cachePath, projectRoot, configurationSignature, file
     project_root: projectRoot,
     configuration_signature: configurationSignature,
     files: fileHashes,
+    modules,
     surface,
   }, null, 2) + '\n', 'utf8')
 }
@@ -1182,7 +1183,46 @@ function main() {
   const discoveryFindings = []
   const reachabilityGaps = []
 
-  for (const filename of files) {
+  const cachedModules = cacheResult.cache?.modules
+  const canReuseModuleCache = cacheResult.state === 'valid'
+    && cachedModules
+    && Object.keys(cachedModules).length > 0
+  if (canReuseModuleCache) {
+    for (const [relativePath, cachedModule] of Object.entries(cachedModules)) {
+      const filename = path.normalize(path.resolve(projectRoot, relativePath))
+      if (!importGraph.has(filename)) continue
+      importGraph.set(filename, (cachedModule.imports || [])
+        .map((relativeDependency) => path.normalize(path.resolve(projectRoot, relativeDependency)))
+        .filter((dependency) => importGraph.has(dependency)))
+      moduleExports.set(filename, new Map(Object.entries(cachedModule.exports || {})))
+    }
+  }
+
+  let filesToParse = new Set(files.map(path.normalize))
+  let cacheReusedFiles = new Set()
+  if (canReuseModuleCache && (changedFiles || cacheInvalidatedFiles.size > 0)) {
+    const seeds = changedFiles || new Set(
+      [...cacheInvalidatedFiles]
+        .filter((relativePath) => Object.prototype.hasOwnProperty.call(fileHashes, relativePath))
+        .map((relativePath) => path.normalize(path.resolve(projectRoot, relativePath))),
+    )
+    const affected = computeIncrementalFiles(seeds, importGraph)
+    filesToParse = new Set([...affected].filter((filename) => sourceSet.has(filename)))
+    cacheReusedFiles = new Set(files.map(path.normalize).filter((filename) => !filesToParse.has(filename)))
+  }
+  if (canReuseModuleCache) {
+    for (const filename of cacheReusedFiles) {
+      const relativePath = toPosix(path.relative(projectRoot, filename))
+      const cachedModule = cachedModules[relativePath]
+      if (!cachedModule) continue
+      usageEntities.push(...(cachedModule.usage_entities || []))
+      parseFailures.push(...(cachedModule.parse_failures || []))
+      discoveryFindings.push(...(cachedModule.discovery_findings || []))
+      reachabilityGaps.push(...(cachedModule.reachability_gaps || []))
+    }
+  }
+
+  for (const filename of filesToParse) {
     const relativePath = toPosix(path.relative(projectRoot, filename))
     const source = fs.readFileSync(filename, 'utf8')
     let segments
@@ -1216,7 +1256,13 @@ function main() {
     }
   }
 
-  for (const record of moduleRecords.values()) moduleExports.set(path.normalize(record.filename), new Map())
+  for (const record of moduleRecords.values()) {
+    if (!moduleExports.has(path.normalize(record.filename))) {
+      moduleExports.set(path.normalize(record.filename), new Map())
+    } else {
+      moduleExports.set(path.normalize(record.filename), new Map())
+    }
+  }
 
   // 固定轮次覆盖常见 re-export 链；超过边界的循环不会被当作已证明的 ThingJS alias。
   let moduleFlowConverged = false
@@ -1331,6 +1377,20 @@ function main() {
       const byPath = left.source.path.localeCompare(right.source.path)
       return byPath || left.source.line - right.source.line || left.source.column - right.source.column
     })
+  const cacheModules = Object.fromEntries(files.map((filename) => {
+    const normalized = path.normalize(filename)
+    const relativePath = toPosix(path.relative(projectRoot, normalized))
+    return [relativePath, {
+      imports: (importGraph.get(normalized) || [])
+        .map((dependency) => toPosix(path.relative(projectRoot, dependency)))
+        .sort(),
+      exports: referenceMapToObject(moduleExports.get(normalized) || new Map()),
+      usage_entities: dedupedEntities.filter((entity) => entity.source.path === relativePath),
+      parse_failures: parseFailures.filter((failure) => failure.path === relativePath),
+      discovery_findings: discoveryFindings.filter((finding) => finding.source?.path === relativePath),
+      reachability_gaps: reachabilityGaps.filter((gap) => gap.source?.path === relativePath),
+    }]
+  }))
   const payload = {
     schema_version: 1,
     generated_at: new Date().toISOString(),
@@ -1385,7 +1445,12 @@ function main() {
       enabled: Boolean(cachePath),
       hit: false,
       invalidated_files: [...cacheInvalidatedFiles].sort(),
-      reused_files: [],
+      reused_files: [...cacheReusedFiles]
+        .map((filename) => toPosix(path.relative(projectRoot, filename)))
+        .sort(),
+      analyzed_files: [...filesToParse]
+        .map((filename) => toPosix(path.relative(projectRoot, filename)))
+        .sort(),
       reason: cachePath
         ? (changedFiles ? 'explicit_changed_files' : cacheResult.reason || 'content_changed')
         : null,
@@ -1395,7 +1460,7 @@ function main() {
   const output = path.resolve(args.output)
   fs.mkdirSync(path.dirname(output), { recursive: true })
   fs.writeFileSync(output, JSON.stringify(payload, null, 2) + '\n', 'utf8')
-  writeResolverCache(cachePath, projectRoot, configurationSignature, fileHashes, payload)
+  writeResolverCache(cachePath, projectRoot, configurationSignature, fileHashes, payload, cacheModules)
   process.stdout.write(`${JSON.stringify(payload.summary, null, 2)}\n`)
   return 0
 }

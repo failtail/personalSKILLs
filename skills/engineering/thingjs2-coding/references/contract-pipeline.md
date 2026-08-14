@@ -164,6 +164,7 @@ python scripts/run_contract_ci.py `
   --contract <versioned-contract.json> `
   --runtime-surface <runtime-surface.json> `
   --allowlist <optional-allowlist.json> `
+  --usage-cache <optional-usage-cache.json> `
   --output-dir <ci-evidence-dir>
 ```
 
@@ -174,6 +175,11 @@ The command:
 3. compares current artifacts, Runtime Surface, Contract and project usage;
 4. writes machine-readable reports;
 5. returns non-zero on a blocking inconsistency.
+
+`--usage-cache` is an optional content-hash/module cache for the AST extractor.
+It may reuse unchanged modules and their cached exports, but CI still validates
+the merged complete Usage Surface. A review-only delta remains ineligible for a
+Contract release.
 
 Block when:
 

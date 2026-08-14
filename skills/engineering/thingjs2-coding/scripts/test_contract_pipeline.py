@@ -357,7 +357,31 @@ def run_usage_extractor(node: str, parser_root: str, temp_root: Path) -> dict:
     cached_second_command[cached_second_command.index("--output") + 1] = str(cached_second_output)
     subprocess.run(cached_second_command, check=True, capture_output=True, text=True)
     cached_usage = json.loads(cached_second_output.read_text(encoding="utf-8"))
-    return full_usage, json.loads(incremental_output.read_text(encoding="utf-8")), cached_usage
+    delta_cache_path = temp_root / "delta-cache.json"
+    delta_cached_output = temp_root / "usage-delta-cache.json"
+    delta_cached_command = [*cached_command, "--changed-files", str(changed_files)]
+    delta_cached_command[delta_cached_command.index("--output") + 1] = str(delta_cached_output)
+    delta_cached_command[delta_cached_command.index("--cache") + 1] = str(delta_cache_path)
+    subprocess.run(delta_cached_command, check=True, capture_output=True, text=True)
+    delta_cached_usage = json.loads(delta_cached_output.read_text(encoding="utf-8"))
+    (temp_root / "src" / "cross-module.js").write_text(
+        (temp_root / "src" / "cross-module.js").read_text(encoding="utf-8")
+        + "// content-only cache invalidation fixture\n",
+        encoding="utf-8",
+    )
+    cached_changed_output = temp_root / "usage-cache-changed.json"
+    cached_changed_command = [*cached_command]
+    cached_changed_command[cached_changed_command.index("--output") + 1] = str(cached_changed_output)
+    subprocess.run(cached_changed_command, check=True, capture_output=True, text=True)
+    cached_changed_usage = json.loads(cached_changed_output.read_text(encoding="utf-8"))
+    return (
+        full_usage,
+        json.loads(incremental_output.read_text(encoding="utf-8")),
+        cached_usage,
+        delta_cached_usage,
+        cached_changed_usage,
+        delta_cache_path.exists(),
+    )
 
 
 def run_unconverged_module_flow(node: str, parser_root: str, temp_root: Path) -> dict:
@@ -439,7 +463,11 @@ def main() -> int:
     args = parse_args()
     with tempfile.TemporaryDirectory(prefix="thingjs-contract-test-") as directory:
         temp_root = Path(directory)
-        usage, incremental_usage, cached_usage = run_usage_extractor(args.node, args.parser_root, temp_root)
+        usage, incremental_usage, cached_usage, delta_cached_usage, cached_changed_usage, delta_cache_exists = run_usage_extractor(
+            args.node,
+            args.parser_root,
+            temp_root,
+        )
         unconverged_usage = run_unconverged_module_flow(args.node, args.parser_root, temp_root)
         safe_surface = run_runtime_probe_safety(args.node, temp_root)
 
@@ -489,6 +517,14 @@ def main() -> int:
     assert len(cached_usage["cache"]["reused_files"]) == usage["summary"]["source_files"]
     assert cached_usage["usage_entities"] == usage["usage_entities"]
     assert cached_usage["summary"] == usage["summary"]
+    assert delta_cached_usage["incremental"]["complete_surface"] is False
+    assert delta_cache_exists is False
+    assert cached_changed_usage["cache"]["hit"] is False
+    assert "src/cross-module.js" in cached_changed_usage["cache"]["invalidated_files"]
+    assert "src/cross-module.js" in cached_changed_usage["cache"]["analyzed_files"]
+    assert len(cached_changed_usage["cache"]["analyzed_files"]) < usage["summary"]["source_files"]
+    assert cached_changed_usage["cache"]["reused_files"]
+    assert cached_changed_usage["summary"] == usage["summary"]
     assert incremental_usage["incremental"]["enabled"] is True
     assert incremental_usage["incremental"]["complete_surface"] is False
     assert incremental_usage["incremental"]["changed_files"] == ["src/cross-module.js"]

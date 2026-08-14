@@ -74,6 +74,20 @@ Therefore the output marks:
 Contract release. This distinction preserves correctness while leaving room
 for a future hash/cache implementation.
 
+`run_contract_ci.py --usage-cache <resolver-cache.json>` 会把同一缓存传递给 Usage extractor；
+Contract validation 仍只接受最终 `complete_surface=true` 的完整结果。
+
+## C02b 局部失效与缓存复用
+
+缓存现在额外保存每个模块的 import graph、导出表、Usage Entity、parse failure、discovery
+finding 和 reachability gap。内容 hash 或显式 changed file 产生失效种子后，resolver 沿
+反向依赖图计算受影响闭包；只有闭包内模块重新解析和传播，其余模块复用缓存数据，最后
+合并为新的完整 Usage Surface。配置指纹变化、缓存缺少模块索引或新增/删除模块时仍回到
+完整提取，避免使用不完整缓存。
+
+局部复用只优化静态模块边界，不改变 `ambiguous`、dynamic、parse failure 或 Contract
+发布门禁；缓存输出会保留 `invalidated_files`、`analyzed_files` 和 `reused_files` 供审计。
+
 ## C02a 内容缓存
 
 `--cache <resolver-cache.json>` 为完整 Usage Surface 保存源码内容 hash、Contract/alias/入口
@@ -89,7 +103,8 @@ for a future hash/cache implementation.
 
 The current slice does not implement:
 
-- content-hash or persistent cache incremental builds;
+- cache reuse for an unchanged complete surface is implemented; changed-build cache reuse is
+  limited to the affected-module/reverse-dependency slice described above;
 - native Vite/TypeScript config execution or every alias plugin convention;
 - general interprocedural call-graph analysis;
 - dynamic constructor-to-class maps;
@@ -107,7 +122,9 @@ non-converged propagation, reverse-dependency delta output, and rejection of an
 incomplete delta by Contract validation.
 
 缓存回归还验证了首次写入、内容/配置指纹命中、完整 summary 复用和 delta 不写入完整
-缓存；缓存命中不会改变 Usage Entity 数量或解析状态。
+缓存；内容修改后只分析受影响闭包并复用其余模块，缓存命中不会改变 Usage Entity 数量
+或解析状态。目标项目 Contract CI 通过 `run_contract_ci.py --usage-cache` 完成首跑和
+命中复测，真实项目仍保持 `EXPECTED_BLOCK`。
 
 The target ThingJS 2.0.13 project must be re-extracted after this slice. Its
 existing release gate remains authoritative: improved resolution may reduce
