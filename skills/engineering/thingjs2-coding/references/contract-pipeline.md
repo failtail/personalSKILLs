@@ -247,6 +247,10 @@ states, unsupported kinds, or unresolved types remain omitted until their
 structured official evidence is controlled. Schema 2 remains a readable migration
 input, not a type-generation source.
 
+An unversioned-latest parameter table may create a reviewed migration candidate,
+but cannot update a pinned schema-3 signature. Unresolved owner, optionality, return
+type, or example-versus-formal-signature conflicts keep that candidate blocked.
+
 ## Storage boundary
 
 Commit this reusable workflow and scripts to the public Skill. Keep exact SDK
