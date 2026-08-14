@@ -300,3 +300,23 @@ API whitelist mindset, real-file inspection, and CI binding. It did not override
 ThingJS evidence hierarchy. Search ranking infrastructure remains deferred; the next
 valuable work is increasing controlled Contract coverage and adding narrowly scoped
 Runtime Behavior Tests.
+
+## 2026-08-14 A01-A22 and complete-gate checkpoint
+
+Activation evaluation now covers A01-A22, including engineer-material conversion,
+Contract-derived declarations, SDK drift, dynamic access, Earth integration, and
+negative 1.x/catalog/framework-only cases. Metadata-only forward testing corrected
+two false negatives without widening broad API cataloging or ordinary TypeScript work.
+
+Routing fixtures now cover R01-R06 and retain one task mode, the smallest domain,
+conditional reasons, and explicit stop boundaries. The user-level replay checker
+accepts the fresh activation/routing record in standard mode. Complete mode also
+requires output quality and target-project runtime behavior to pass; coverage-only,
+public-example, Runtime Surface, or partial lifecycle evidence cannot satisfy it.
+
+Fresh synthetic Contract, structured declaration, promotion-queue, Behavior-schema,
+syntax, dynamic-blocking, and real-project dry-run checks were recorded outside this
+public repository. The real-project non-zero gate remains an expected compatibility
+block, and the target Contract still has no behavior-verified records. Therefore the
+Skill remains in progress even though activation coverage and deterministic tooling
+pass.
