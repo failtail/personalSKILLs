@@ -27,6 +27,15 @@ agent.
 | A11 | Create `THING.Entity` inside Vue and clean it on unmount | Yes, alongside the Vue Skill |
 | A12 | Integrate a t3d controller into ThingJS | No |
 | A13 | Maintain or evaluate this Skill's activation, routing, or evidence workflow | Yes |
+| A14 | Check project ThingJS 2.0.13 Contract/SDK drift | Yes |
+| A15 | Decide whether `THING[config.type]` is safe to publish | Yes |
+| A16 | Integrate Earth Map/TileLayer and verify the Earth SDK | Yes |
+| A17 | Convert an engineer-maintained Earth example into knowledge candidates | Yes: convert mode |
+| A18 | Implement a Vue page filter without changing `THING` | No |
+| A19 | Catalog the complete official API website for search without a code decision | No |
+| A20 | Fix a late callback contaminating state after scene replacement | Yes |
+| A21 | Generate `.d.ts` from a verified Contract | Yes |
+| A22 | Continue supporting `app.create` in a ThingJS 1.x project | No |
 
 Record false positives and false negatives separately. For a cross-domain prompt
 such as A11, success means both applicable Skills can activate without this Skill
@@ -180,6 +189,7 @@ Before claiming the Skill change is validated:
    conflicting, or not run;
 7. run the user-level replay checker, when present, against the exact fixtures and
    result record; its complete mode must fail while any required case is `NOT_RUN`;
+   it must also fail for partial output quality or target-project runtime behavior.
 8. inspect the complete diff, public/private boundary, generated reports, and
    installed-copy equality before release.
 

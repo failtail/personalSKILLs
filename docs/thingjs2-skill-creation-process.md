@@ -227,7 +227,7 @@ adds conditional references only with a recorded reason. Unknown owner, signatur
 or target runtime support is a stop condition rather than permission to bulk-load the
 engineer corpus or every public reference.
 
-Evaluation is now split into A01–A12 metadata activation cases, R01–R06 routing/load-
+Evaluation is now split into A01–A22 metadata activation cases, R01–R06 routing/load-
 trace cases, T1–T5 output behavior tests, and separate target-engine runtime proof.
 Structural validation, public/private leakage checks, installed-copy hash equality,
 and independent review remain separate release gates.
