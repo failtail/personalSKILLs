@@ -61,6 +61,19 @@ or API cache; loads a conditional file without stating its gate; follows nested
 references outside the selected route; or continues searching after a defined stop
 condition should block the API.
 
+The physical child-workflow assertions are intentionally small:
+
+| Route | Required child bundle |
+| --- | --- |
+| R02 Entity readiness/teardown | `workflows/entity-lifecycle.md` |
+| R03 repeated object events | `workflows/event-ownership.md` |
+| R04 camera timing conflict | `workflows/camera-animation.md` |
+| Scene loading/replacement variant | `workflows/scene-loading.md` |
+
+`coding-standards.md`, `practice-workflows.md`, Contract, evidence, and project
+Overlay remain cross-cutting references selected by the mode and conditional gates;
+they are not duplicated into each child workflow.
+
 ## C. Output-behavior smoke tests
 
 These tests measure evidence discipline and safe code behavior after correct

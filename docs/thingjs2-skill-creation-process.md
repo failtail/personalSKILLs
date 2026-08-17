@@ -79,7 +79,8 @@ Context7 MCP 已通过本机配置完成只读验证：server `Context7/4.0.0` �
 Skill 主体只保留执行契约；API 来源信任按需读取
 [`context7-official-sources.md`](../skills/engineering/thingjs2-coding/references/context7-official-sources.md)，
 工程师真实实践映射按需读取
-[`practice-workflows.md`](../skills/engineering/thingjs2-coding/references/practice-workflows.md)。
+[`practice-workflows.md`](../skills/engineering/thingjs2-coding/references/practice-workflows.md)，具体能力
+再按路由读取 `references/workflows/` 下的 child workflow。
 这使 App/load、Entity readiness、事件 ownership、destroy、camera 和 scene
 replacement 能够复用，而不会把 402 份工程师 Markdown 全部塞入每次上下文。
 
@@ -118,10 +119,12 @@ provides page content or a readable browser session.
 The supplied 402-document engineer corpus is currently **indexed and partially
 converted**, not fully promoted. The public Skill can already route core App,
 Entity, event, destruction, camera, and scene-replacement workflows through
-`practice-workflows.md`. The remaining corpus still needs per-file provenance,
-domain routing, conflict classification, and runtime promotion gates.
+`coding-standards.md` and matching `workflows/*` child bundles. The remaining
+corpus still needs per-file provenance, conflict classification, and runtime
+promotion gates.
 
-The next implementation separates the mixed corpus into five callable layers:
+This stage separates the mixed corpus into a conversion index and four callable
+child workflows:
 
 | Layer | Purpose | Promotion boundary |
 | --- | --- | --- |

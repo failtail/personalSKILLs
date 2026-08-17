@@ -1,6 +1,6 @@
 ---
 name: thingjs2-coding
-description: Use when Codex must implement, debug, review, or refactor executable ThingJS 2.0 code, decide whether a ThingJS 2.0 API or example is safe, derive type declarations from a verified ThingJS 2.0 Contract, convert engineer-maintained ThingJS material into a candidate, Recipe, Incident, or rejected knowledge record, or maintain/evaluate this Skill's activation, routing, or evidence workflow. Trigger when work touches the global THING API, including App or scene loading, Entity/object lifecycle, query, events, camera, animation, rendering, cleanup, target-SDK compatibility, or a suspicious/undocumented THING member proposed for code. Do not use for ThingJS 1.x, compatibility/migration, t3d integration, generic Vue/JavaScript/CSS work without THING changes, broad API-site cataloging, ordinary TypeScript declarations without a ThingJS Contract decision, or material conversion without ThingJS evidence/project-knowledge decisions. Framework-neutral.
+description: Use when Codex must implement, debug, review, or refactor executable ThingJS 2.0 code, decide whether a ThingJS 2.0 API or example is safe, derive type declarations from a verified ThingJS 2.0 Contract, convert engineer-maintained ThingJS material including Earth and scene examples into a candidate, Recipe, Incident, or rejected knowledge record, or maintain/evaluate this Skill's activation, routing, or evidence workflow. Trigger when work touches the global THING API, including App or scene loading, Entity/object lifecycle, query, events, camera, animation, rendering, cleanup, target-SDK compatibility, or a suspicious/undocumented THING member proposed for code. Do not use for ThingJS 1.x, compatibility/migration, t3d integration, generic Vue/JavaScript/CSS work without THING changes, broad API-site cataloging, ordinary TypeScript declarations without a ThingJS Contract decision, or material conversion without ThingJS evidence/project-knowledge decisions. Framework-neutral.
 ---
 
 # ThingJS 2.0 Coding
@@ -61,10 +61,11 @@ Use these direct references only through the router:
   [source-policy.md](references/source-policy.md), and
   [context7-official-sources.md](references/context7-official-sources.md).
 - Implementation and lifecycle: [coding-standards.md](references/coding-standards.md),
-  [practice-workflows.md](references/practice-workflows.md), and
+  the selected child workflow under `references/workflows/`, and
   [gotchas.md](references/gotchas.md).
 - Project compatibility: [project-overlay.md](references/project-overlay.md).
-- Evidence promotion: [evidence-model.md](references/evidence-model.md) and
+- Evidence promotion: [practice-workflows.md](references/practice-workflows.md),
+  [evidence-model.md](references/evidence-model.md), and
   [knowledge-schema.md](references/knowledge-schema.md).
 - Version-bound compatibility and CI: [contract-pipeline.md](references/contract-pipeline.md).
 - Skill maintenance: [evaluation.md](references/evaluation.md) and

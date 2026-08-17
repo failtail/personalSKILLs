@@ -33,4 +33,3 @@ Inventory every ThingJS constructor, method, property, enum, and event in the
 diff. Remove blocked, private, compatibility, guessed, and unresolved members.
 Run the smallest real browser smoke test that proves lifecycle behavior; a build,
 mock, or Git commit is not engine-runtime evidence.
-

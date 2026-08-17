@@ -36,11 +36,11 @@ until a conditional gate is met.
 
 | Domain | Required | Conditional local evidence |
 | --- | --- | --- |
-| App bootstrap or scene loading | `practice-workflows.md` | App/scene Recipe -> implementation or runtime task; loading Incident -> signature, cancellation, or replacement conflict |
-| Entity/object creation, readiness, or destroy | `practice-workflows.md` | Entity Recipe -> readiness or teardown task; destroy Incident -> stale reference or wrong owner |
-| Event binding/unbinding | `practice-workflows.md` | Event Recipe/Incident -> tag, condition, repeated listener, or owner cleanup matters |
-| Camera or animation | `gotchas.md` | Camera Recipe -> target readiness/order matters; timing conflict -> `duration/onComplete` versus `time/complete` appears |
-| Scene replacement or loading cancellation | `practice-workflows.md`, `gotchas.md` | Scene-replacement Recipe/Incident -> generation token, rollback, late result, or cleanup must be implemented |
+| App bootstrap or scene loading | `workflows/scene-loading.md` | App/scene Recipe -> implementation or runtime task; loading Incident -> signature, cancellation, or replacement conflict |
+| Entity/object creation, readiness, or destroy | `workflows/entity-lifecycle.md` | Entity Recipe -> readiness or teardown task; destroy Incident -> stale reference or wrong owner |
+| Event binding/unbinding | `workflows/event-ownership.md` | Event Recipe/Incident -> tag, condition, repeated listener, or owner cleanup matters |
+| Camera or animation | `workflows/camera-animation.md` | Camera Recipe -> target readiness/order matters; timing conflict -> `duration/onComplete` versus `time/complete` appears |
+| Scene replacement or loading cancellation | `workflows/scene-loading.md`, `gotchas.md` | Scene-replacement Recipe/Incident -> generation token, rollback, late result, or cleanup must be implemented |
 | Query, campus, Earth, style, or rendering | `knowledge-retrieval.md` | `contract-pipeline.md` -> claiming support in a target Artifact Set; matching domain candidate -> only after exact owner, signature, version, and source checks |
 | Hallucination, private member, compatibility, or wrong-owner review | `gotchas.md` | Incident record -> only for the exact matching failure pattern |
 
@@ -58,3 +58,9 @@ Stop reference loading and report the gap when:
 The supplied engineer corpus stays in the user workspace. Use its manifest or domain
 index to locate a small candidate slice; never load all source documents or copy
 private project material into the public Skill.
+
+The child workflow paths above are the physical loading boundary. Do not create
+one file per API or a second `domains/` tree: add a child workflow only when its
+content has a separate route gate and can be loaded without reading an adjacent
+capability. A domain label may remain a router label until it has an independent
+public evidence bundle.

@@ -57,8 +57,9 @@ callable tool actually returned a result. When the state is anything other than
 
 Load the Skill's [context7-official-sources.md](../skills/engineering/thingjs2-coding/references/context7-official-sources.md)
 and [practice-workflows.md](../skills/engineering/thingjs2-coding/references/practice-workflows.md)
-only when the task needs source trust or engineer-pattern mapping; this keeps the
-main Skill progressively disclosed.
+only when the task needs source trust or engineer-pattern mapping; load a matching
+child workflow under `references/workflows/` only for a concrete capability. This
+keeps the main Skill progressively disclosed without creating a second router.
 
 Trigger official web fallback when Context7 has no result, an incomplete or
 truncated result, no original source URL, an ambiguous version, a conflict, or
