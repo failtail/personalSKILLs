@@ -109,6 +109,18 @@ Split runtime proof into two independent artifacts:
 A build, mock, Git commit, public example, Runtime Surface, or agent report cannot
 substitute for target-project behavior evidence.
 
+### Runtime prerequisites and authentication boundary
+
+Record service availability and authentication as separate preconditions for a
+target-project Behavior Test. A connection refusal, a redirect to a login page,
+or a human-verification page is `NOT_RUN`/`PARTIAL` runtime evidence, never a
+passed behavior result. A read-only probe may record the URL, page title, HTTP or
+connection result, `typeof window.THING`, and canvas count, but must not read or
+export cookies, tokens, passwords, or storage values. Do not submit credentials,
+bypass CAPTCHA, or infer runtime behavior from an unauthenticated shell. Resume
+the runner only after the user provides a legitimate test session or approved
+test-login mechanism and the target service is reachable.
+
 ## E. Contract pipeline tests
 
 Run the synthetic pipeline tests and at least one real-project dry run when changing

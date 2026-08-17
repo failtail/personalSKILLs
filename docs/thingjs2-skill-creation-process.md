@@ -336,3 +336,15 @@ Incident-only, and risky or unresolved sources are rejected from direct executab
 2.0/official-Contract promotion while remaining available for audit or a separately
 reviewed derivative. This distinction closes corpus routing without deleting useful
 failure history or claiming that candidates are verified.
+
+## 2026-08-17 runtime prerequisite audit
+
+The target-project behavior track now distinguishes a stopped local service from
+a reachable but unauthenticated application. A connection refusal, login-page
+redirect, or human-verification page is retained as a runtime blocker and cannot
+be promoted to Runtime Surface or Runtime Behavior evidence. Read-only browser
+probes may record only visible navigation and bounded runtime signals; they do not
+read or persist credentials, cookies, tokens, or storage values. The behavior
+runner resumes only after a legitimate test session and reachable target service
+are supplied. This rule is reusable public workflow guidance; project URLs and
+runtime output remain in the user's private workspace.
