@@ -30,6 +30,7 @@
 - **拆成 4 个 child workflow**：每个文件对应 `domain-routing.md` 中已有的独立触发门；事件与实体生命周期分开，但都保留同一 owner/teardown 证据边界。
 - **不创建第二套 `domains/` 目录**：当前公开证据不足以支持更多独立领域 bundle；未来只有当新领域有独立任务门和最小证据包时才增加文件。
 - **不改变生成资格**：拆分只改变读取路径，不放宽 blocked Contract、生产 unresolved Usage、运行时认证或 Behavior promotion 规则。
+- **C14 路由收窄**：未知成员的 `verify` 请求保持 `domain: null`；组合请求只记录一个 primary domain，场景替换等次级生命周期边界通过条件 child workflow 加载，避免把 domain 标签扩散成多域矩阵。
 
 ## Validation
 

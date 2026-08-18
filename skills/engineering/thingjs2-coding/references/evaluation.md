@@ -74,6 +74,10 @@ The physical child-workflow assertions are intentionally small:
 Overlay remain cross-cutting references selected by the mode and conditional gates;
 they are not duplicated into each child workflow.
 
+Mixed requests retain one primary domain in the trace. An unknown-member `verify`
+request remains `domain: null`; a scene-replacement qualifier on a camera task may
+load `workflows/scene-loading.md` conditionally without becoming a second domain.
+
 ## C. Output-behavior smoke tests
 
 These tests measure evidence discipline and safe code behavior after correct

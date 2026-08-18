@@ -1,23 +1,27 @@
 # ThingJS 2.0 task and domain router
 
 Read this file immediately after the Skill activates. Select one task-mode row and,
-when a concrete ThingJS capability is involved, one domain row. Maintenance and
-evidence-promotion work may set `domain: null`; do not invent a runtime domain just
-to satisfy the trace schema. Deduplicate required references and load nothing else
-until a conditional gate is met.
+when a concrete ThingJS capability is involved, one primary domain row. Maintenance,
+evidence-promotion, and an otherwise unspecified member-verification task may set
+`domain: null`; do not invent a runtime domain just to satisfy the trace schema.
+Deduplicate required references and load nothing else until a conditional gate is met.
 
 ## Loading rules
 
 - `Required` means read before acting on that mode or domain.
 - `Conditional` means read only when the condition after the arrow is true.
-- Start with one mode. Add one domain only when the request has a concrete ThingJS
-  capability; add another domain only when a separate capability cannot be decided
-  from the first bundle.
+- Start with one mode. Add one primary domain only when the request has a concrete
+  ThingJS capability. A lifecycle qualifier such as scene replacement does not create
+  a second domain label; load its child workflow conditionally only when the primary
+  bundle cannot cover the separate cancellation or late-result boundary.
 - Record `mode`, `domain`, `references_loaded`, and a one-line reason for each
   conditional load in the local evaluation trace.
 - Stop when the smallest sufficient evidence set is reached. Unknown existence,
   owner, signature, version, lifecycle, or runtime compatibility blocks the call;
   it does not justify bulk-loading every reference or the engineer corpus.
+- For `verify` requests that name no concrete capability beyond an unknown member,
+  keep `domain: null` and use the mode's retrieval/policy references; the gotcha row
+  is for a concrete review finding, not a generic substitute for missing evidence.
 
 ## Select one task mode
 
@@ -42,7 +46,7 @@ until a conditional gate is met.
 | Camera or animation | `workflows/camera-animation.md` | Camera Recipe -> target readiness/order matters; timing conflict -> `duration/onComplete` versus `time/complete` appears |
 | Scene replacement or loading cancellation | `workflows/scene-loading.md`, `gotchas.md` | Scene-replacement Recipe/Incident -> generation token, rollback, late result, or cleanup must be implemented |
 | Query, campus, Earth, style, or rendering | `knowledge-retrieval.md` | `contract-pipeline.md` -> claiming support in a target Artifact Set; matching domain candidate -> only after exact owner, signature, version, and source checks |
-| Hallucination, private member, compatibility, or wrong-owner review | `gotchas.md` | Incident record -> only for the exact matching failure pattern |
+| Hallucination, private member, compatibility, or wrong-owner review | `gotchas.md` | Incident record -> only for the exact matching failure pattern; select this row only when the task is a concrete review finding |
 
 ## Stop and escalation conditions
 
