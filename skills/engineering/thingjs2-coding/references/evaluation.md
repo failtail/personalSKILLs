@@ -56,6 +56,19 @@ references should be read. Require a load trace containing `mode`, `domain`,
 | R05 | Convert one engineer example to a Recipe candidate | Corpus-conversion mode; do not load unrelated API domains or promote an API fact |
 | R06 | Maintain this Skill's description | Maintenance mode; evaluation/hybrid policy only, plus the route being changed |
 
+R05 has an additional output boundary: the result may be only a compact
+conversion-ledger entry or a selectively materialized candidate derivative. It
+must resolve an indexed source to exactly one row by normalized path plus SHA,
+read only that row, and preserve its domain, primary/evidence class, risk flags,
+semantic/direct decision, reason codes, next gate, and materialization policy.
+Raw content or file names must not replace those governance fields. Unindexed
+material may create only a candidate row with an explicit manifest/index gate. A
+true Recipe/Incident promotion also needs preconditions, Contract IDs, and evidence
+references; `ledger_only` remains acceptable when evidence or priority is insufficient.
+R05 must not edit the triggering `description`, change the routed `mode` or
+`domain`, or change any API/Contract state, including by treating the engineer
+example as an API fact.
+
 Fail routing when the agent bulk-loads the public references, entire engineer corpus,
 or API cache; loads a conditional file without stating its gate; follows nested
 references outside the selected route; or continues searching after a defined stop
