@@ -12,6 +12,8 @@
 | `workflows/camera-animation.md` | 相机/动画 readiness、ownership、时间字段冲突与单位边界。 |
 | `select_knowledge_record.py` | 按源路径、字节数和 SHA-256 确定性选择一条 manifest/ledger 记录。 |
 | `test_select_knowledge_record.py` | 锁定单条选择器的成功输出与 fail-closed 回归边界。 |
+| `version_binding` | 仅由 `version_clues` 派生的 `clue_only`/`unbound` 版本线索状态。 |
+| `binding_state` | 将未审查来源明确标记为 `blocked`、`source-only` 或 `rejected`。 |
 
 ## C19 术语表
 
@@ -43,6 +45,7 @@
 - **精确摘要算法**：排除目录为 `__pycache__`、`node_modules`、`.git`、`.cache`、`.pytest_cache`、`.mypy_cache`、`.ruff_cache`、`coverage`、`dist`、`build`、`tmp`、`temp`；排除文件模式为 `*.pyc`、`*.pyo`、`*.log`、`*.tmp`、`*.temp`、`*.swp`、`*.swo`、`~*`、`*.bak`、`*.cache`、`npm-debug.log*`、`yarn-debug.log*`、`yarn-error.log*`、`.DS_Store`、`Thumbs.db`。每项追加 `relative_path + LF + uppercase content SHA-256 + LF`，整体以 UTF-8 no-BOM 编码后再做 SHA-256；算法标识必须精确等于 `thingjs-skill-tree-v1;sort=Ordinal;entry=relative-path+LF+uppercase-content-sha256+LF;manifest=UTF-8-no-BOM;digest=SHA-256;scope=non-cache-files`。
 - **严格计数与记录比较**：计数只包含上述非缓存文件；结果记录必须同时提供 digest、count、algorithm。摘要按大写比较，algorithm 精确匹配，count 先通过非负 JSON 整数 number 类型门，再与枚举数量做精确数值比较。
 - **失败边界**：缺少 owner/signature/version、生产 `ambiguous`/`dynamic_unresolved`、服务/认证不可用或缺少 Behavior evidence 时仍 fail-closed。
+- **C20 快照影响边界**：`practice-workflows.md` 规定 `added/removed` 只表示成员变化；同一路径才比较 content/governance/binding。`source_ref` 必须精确匹配 snapshot ID 与规范化 source path，但跨 snapshot 身份变化不单独制造 governance/binding impact；`version_clues` 变化即使仍为 `clue_only` 也属于 binding change；受影响集合只能来自显式 refs，不能按 domain/API token 推断。
 - **维护边界**：`gotchas.md`、Contract、evidence 和 project overlay 继续保持跨 workflow 的单一权威，不在 child workflow 中复制完整 API 清单。
 
 ## Key Decisions
@@ -57,6 +60,7 @@
 - **精确行复用**：已索引材料必须以 normalized path + SHA 精确命中并只读取一条 manifest/ledger 记录，原样保留其治理字段；未索引材料只能建立带 manifest/index gate 的 candidate，不能从文件名或原文重推 domain。
 - **C19 两文件决策（L 级）**：选择器是跨 manifest、ledger 与源指纹的公共 fail-closed 契约，按 L 级记录设计与验证。保留一个运行脚本和一个独立测试文件是最小合理拆分：运行脚本把完整 ledger 的扫描与校验留在确定性进程内，只向模型返回单条 compact JSON；测试文件独立锁定越界、重复、漂移和越权阻断，避免把测试夹进运行时代码或要求模型加载全 ledger 自行判断。
 - **完整性而非证据晋级**：Skill-tree digest 只证明 replay 使用的 Skill 输入未漂移；它不证明 activation、routing、output quality、Runtime Surface、Runtime Behavior、API Contract 或知识晋级，也不能把 synthetic/public-example 结果升级为真实目标运行证据。
+- **C20 不把公共 Skill 变成知识库**：schema-3 绑定字段和 snapshot analyzer 保留在用户级治理工具；公共 Skill 只保留紧凑的显式引用、fail-closed 和快照 diff 规则，避免新增公共脚本/目录和 API 清单膨胀。
 
 ## Validation
 
@@ -68,6 +72,7 @@
 - **Negative replay**：`skill-tree-hash` 场景必须产生非零阻断，并令 `target_assertion=true`，明确命中 `Recorded Skill tree SHA-256 does not match the enumerated non-cache Skill tree.`；其他失败不能冒充目标断言。
 - **Complete replay**：在相同 tree 完整性门之上，仍要求 output coverage/quality 为 `PASS` 且目标项目 Runtime Behavior 为 `PASS`；tree 通过本身不能满足 complete gate。
 - `SKILL.md` frontmatter 有效，description 1002 字符，仍在 1024 字符限制内。
+- C20 公共转换政策补充 `version_binding`、空绑定数组、source-only evidence、`binding_state`、immutable promotion-state allowlist、精确 source identity 和 explicit-ref snapshot diff；`practice-workflows.md` 保持不超过 100 行。
 - 现有 synthetic Contract/Usage/Behavior schema/queue 回归继续通过；真实项目的既有 `EXPECTED_BLOCK` 不被隐藏。
 - 安装副本与公共 Skill 逐文件 SHA-256 一致；缓存目录不计入交付文件数。
 - 已知限制：目标项目服务/认证仍不能提供真实 Behavior，Earth Artifact 与目标 CI 授权仍未提供；本次拆分不宣称总体 `COMPLETE`。

@@ -31,12 +31,11 @@ scope, or runtime compatibility remains unknown.
 
 ## Minimal conversion ledger contract
 
-The conversion index is a compact, machine-readable ledger rather than a copy of
-the engineer corpus. Every row carries these minimum fields:
+The conversion index is a compact, machine-readable ledger rather than a copy of the engineer corpus. Every row carries these minimum fields:
 
 | Field | Minimum meaning |
 | --- | --- |
-| `source_ref` / `sha256` | Stable source reference and content fingerprint; keep raw text and private paths outside the public Skill. |
+| `source_ref` / `sha256` | Snapshot identity and content fingerprint; require `sources/engineer-corpus/<snapshot_id>/raw/<normalized source_path>` plus matching source identity refs. |
 | `domain` | Non-empty corpus semantic classification. When no concrete runtime capability applies, use a governance or review domain; `domain: null` is reserved for task load traces, and an API domain must not be invented. |
 | `evidence_class` / `primary_class` | Preserved engineer/project provenance class such as `engineer_example`, `project_practice`, `troubleshooting_incident`, or `review_only`; it is not proof of an API fact. |
 | `risk_flags` | Preserved snapshot risk labels; conversion may not clear or replace them from raw content. |
@@ -45,39 +44,40 @@ the engineer corpus. Every row carries these minimum fields:
 | `next_evidence_gate` | The smallest missing official, Artifact-Set, Contract, project, or Behavior gate required for reuse. |
 | `direct_promotion_decision` | Direct destination decision: `candidate`, `incident`, or `rejected`; `candidate` is not active executable knowledge. |
 | `materialization_plan` | `ledger_only` or a narrowly selected dossier plan; materialization never changes evidence authority. |
+| binding fields | `version_binding`, `preconditions`, `contract_ids`, `evidence_refs`, `test_refs`, and `binding_state`; source-only rows cannot imply verification. |
 
-For a source in an indexed snapshot, normalize its relative source path and
-require exactly one manifest/promotion-ledger row matching both that path and its
-SHA-256. Read only that matching row, not the corpus, and preserve its `domain`,
-`evidence_class`/`primary_class`, `risk_flags`, semantic/direct decision, reason
-codes, next gate, and materialization plan. Do not infer a replacement domain or
-overwrite governance fields from raw content or a file name. New unindexed
-material may create only a candidate row and must record an explicit
-manifest/index admission gate in `next_evidence_gate`.
+For an indexed source, normalize its relative path and require exactly one
+manifest/ledger row matching path and SHA-256. Read only that row, preserve its
+governance fields, and never infer a domain or overwrite them from content or a
+file name. New material is candidate-only and records an explicit admission gate.
 
-Apply the fail-closed mapping used by conversion tooling: `candidate` maps to
-direct `candidate`, `incident` maps to direct `incident`, and `needs_review` or
-`rejected` maps to direct `rejected`. A `needs_review` source may return only
-through a separately reviewed derivative. A `ledger_only` materialization plan
-does not relax or override this mapping.
+In schema 3, derive `version_binding` only from `version_clues` (`clue_only` or
+`unbound`). Until a reviewed derivative exists, `preconditions`, `contract_ids`,
+and `test_refs` stay empty; `evidence_refs` must uniquely and stably include the
+matching source identity (`source_ref` and source SHA), and `binding_state` is
+`blocked`, `source-only`, or `rejected`. The immutable-manifest
+`promotion_state` allowlist is `indexed_not_promoted`, `excluded_pending_review`,
+`needs_split`, or `rejected`; `derived_state` remains exactly `candidate_only`.
 
-`candidate`, `Recipe`, `Incident`, and `rejected` remain separate semantic or
-knowledge outcomes. `Recipe` is not a `direct_promotion_decision` value; it is a
-candidate-derived knowledge type only after the additional promotion gate below.
-Before a Recipe or Incident is actually promoted into reusable project knowledge,
-the row or its reviewed derivative must additionally provide non-empty
-`preconditions`, `contract_ids`, and `evidence_refs`. These fields bind the
-composition or failure to its prerequisites, the exact Contract records it uses,
-and the evidence that supports the claimed outcome; they do not promote an API
-record by themselves.
+Apply the fail-closed mapping: `candidate`→`candidate`, `incident`→`incident`,
+and `needs_review`/`rejected`→`rejected`. A `needs_review` source returns only
+through a reviewed derivative; `ledger_only` never relaxes this mapping.
 
-`ledger_only` is a valid final result for low-priority material or material that
-has not passed its next evidence gate. It preserves provenance, reasons, and the
-follow-up gate without consuming context with a dossier. Do not bulk-materialize
-remaining/low-priority ledger-only records merely to make the corpus appear complete;
-selective materialization is a policy decision, not a coverage metric. A
-ledger-only row must not be read as a Recipe, an Incident recommendation, or an
-official API/Contract fact.
+`candidate`, `Recipe`, `Incident`, and `rejected` remain separate outcomes;
+`Recipe` is not a direct-promotion value. A reusable Recipe/Incident requires a
+reviewed derivative with non-empty `preconditions`, `contract_ids`, and
+`evidence_refs`; these bind composition/failure but never promote an API record.
+
+`ledger_only` is valid for low-priority or not-yet-gated material: it preserves
+provenance and the follow-up gate without a dossier. Do not bulk-materialize it;
+it is never a Recipe, Incident recommendation, or official API/Contract fact.
+
+For snapshot diff, compare `source_path` membership plus content, governance,
+and binding fields. Added/removed are membership-only; exact `source_ref` changes
+between valid snapshot IDs are not governance/binding changes, while a
+`version_clues` change is a binding change even when both values are `clue_only`.
+Affected knowledge/Contract/evidence/test sets come only from explicit old/new
+refs; domain or API names never infer impact.
 
 ## Deterministic single-record selection
 
