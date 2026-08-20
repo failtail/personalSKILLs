@@ -234,7 +234,17 @@ Before claiming the Skill change is validated:
    it must also fail for partial output quality or target-project runtime behavior.
    Bind output quality to the hash of an independent evaluator's raw artifact;
    a self-reported forward artifact cannot satisfy the quality gate by itself.
-8. inspect the complete diff, public/private boundary, generated reports, and
+8. require the result record to contain the exact digest, file count, and algorithm
+   for the installed Skill tree's non-cache files. Enumerate recursively from the
+   `SkillPath` parent, normalize relative paths to `/`, sort by `Ordinal`, and
+   exclude cache/temporary boundaries such as `__pycache__`, `.pyc`, `.git`,
+   `node_modules`, build outputs, and temporary/log files. For each remaining file,
+   append `relative_path + LF + uppercase content SHA-256 + LF` to a UTF-8
+   no-BOM manifest, then SHA-256 the manifest. The exact algorithm identifier is
+   `thingjs-skill-tree-v1;sort=Ordinal;entry=relative-path+LF+uppercase-content-sha256+LF;manifest=UTF-8-no-BOM;digest=SHA-256;scope=non-cache-files`.
+   This tree digest proves only evaluation-input integrity; it never substitutes
+   for activation, output quality, Runtime Surface, or Runtime Behavior evidence.
+9. inspect the complete diff, public/private boundary, generated reports, and
    installed-copy equality before release.
 
 Fresh commands and artifacts must support every completion claim. Five behavior tests

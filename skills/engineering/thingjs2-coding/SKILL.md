@@ -151,6 +151,9 @@ Never promote a commit, successful build, or mock-only test into an official API
 
 - Run `scripts/preflight.py` to fingerprint local SDK artifacts and inventory
   candidate `THING.*` tokens without validating those tokens as APIs.
+- Run `scripts/select_knowledge_record.py` for one indexed engineer source; pass
+  `--source-root`, `--source-file`, `--manifest`, and `--ledger`, and stop on any
+  non-zero result instead of loading the full ledger into model context.
 - Run `scripts/validate_registry.py <registry.json>` before accepting registry
   changes to legacy evidence input. A non-zero result blocks promotion.
 - Run `scripts/build_versioned_contract.py` to normalize controlled source records

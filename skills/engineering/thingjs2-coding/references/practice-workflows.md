@@ -1,19 +1,15 @@
 # Reusable ThingJS 2.0 practice workflows
 
-This file is the conversion index for engineer-maintained material. Read it for
-`convert` or `promote` work; for implementation or diagnosis, load only the
-matching child workflow under `workflows/`.
+This conversion index is for engineer-maintained material. Read it for `convert`
+or `promote`; otherwise load only the matching child workflow under `workflows/`.
 
 ## Workflow contract
 
 Every promoted workflow records:
 
-- preconditions and the required ThingJS 2.0 runtime scope;
-- exact API owners and source URLs;
-- object, event, DOM and asynchronous-request ownership;
-- readiness, cancellation and late-completion behavior;
-- cleanup, rollback and failure checks;
-- project/SDK/runtime evidence before `project_verified` promotion.
+- preconditions, required ThingJS 2.0 runtime scope, exact API owners and sources;
+- object, event, DOM and request ownership, plus readiness and cancellation;
+- late completion, cleanup, rollback, failure, and project/runtime evidence.
 
 ## Corpus-to-workflow index
 
@@ -26,10 +22,9 @@ Every promoted workflow records:
 
 ## Conversion boundary
 
-Classify each source as an API fact candidate, Example, Recipe, Incident, or
-rejected record before writing a derivative. Engineer examples are composition
-and ordering candidates, never silent signature definitions. Keep source
-fingerprints and private corpus content in the user workspace.
+Classify each source as an API fact candidate, Example, Recipe, Incident, or rejected
+record before writing a derivative. Examples are composition/ordering candidates,
+never silent signatures; keep fingerprints and private content in the user workspace.
 
 These workflows do not authorize an API whose exact official signature, version
 scope, or runtime compatibility remains unknown.
@@ -83,3 +78,23 @@ remaining/low-priority ledger-only records merely to make the corpus appear comp
 selective materialization is a policy decision, not a coverage metric. A
 ledger-only row must not be read as a Recipe, an Incident recommendation, or an
 official API/Contract fact.
+
+## Deterministic single-record selection
+
+For one indexed engineer source, run:
+
+```text
+python scripts/select_knowledge_record.py --source-root <source-root> --source-file <source-file> --manifest <manifest.json> --ledger <ledger.json>
+```
+
+Provide a source root, one source file inside that root, a schema-3 manifest, and
+a schema-3 promotion ledger. On success, stdout contains one compact JSON object
+with exactly `valid`, `source_path`, `sha256`, `manifest_record`, and
+`ledger_record`; the tool reads no adjacent corpus source and writes no file.
+
+Treat every non-zero exit as a stop. The tool writes the stable failure code to
+stderr and emits no success JSON when the source escapes the root, either JSON or
+schema is invalid, the normalized POSIX path has zero or multiple exact matches,
+bytes/SHA-256 drift, manifest/ledger identity or governance conflicts, required
+governance is missing, or `official_api_fact` is not `false`. Do not recover by
+inferring fields from the source text or by loading the full ledger into context.
